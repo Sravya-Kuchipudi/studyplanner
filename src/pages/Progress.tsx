@@ -7,7 +7,10 @@ import {
   BookOpen, 
   CheckCircle,
   AlertCircle,
-  Clock
+  Clock,
+  Edit,
+  Plus,
+  Trash2
 } from "lucide-react";
 import { 
   PieChart, 
@@ -28,9 +31,39 @@ import {
   TabsList,
   TabsTrigger 
 } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 
-// Sample data - in a real app this would come from a database
-const subjects = [
+interface Subject {
+  name: string;
+  lessons: number;
+  completed: number;
+  color: string;
+}
+
+// Initial subjects data
+const initialSubjects: Subject[] = [
   { name: "Mathematics", lessons: 24, completed: 18, color: "#6b66f8" },
   { name: "Physics", lessons: 20, completed: 12, color: "#8189ff" },
   { name: "Chemistry", lessons: 18, completed: 10, color: "#a0b0ff" },
@@ -38,8 +71,26 @@ const subjects = [
   { name: "Computer Science", lessons: 22, completed: 8, color: "#5d49eb" }
 ];
 
+// Helper function to generate a random color
+const getRandomColor = () => {
+  const colors = ["#6b66f8", "#8189ff", "#a0b0ff", "#c4d0ff", "#5d49eb", "#4c9fe0", "#5a7dc2"];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
 const Progress = () => {
+  const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
   const [activeTab, setActiveTab] = useState("overview");
+  
+  // Dialog states
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [newSubject, setNewSubject] = useState<Omit<Subject, "color">>({
+    name: "",
+    lessons: 0,
+    completed: 0
+  });
+  const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
 
   // Calculate total lessons and completed lessons
   const totalLessons = subjects.reduce((acc, subject) => acc + subject.lessons, 0);
@@ -61,10 +112,149 @@ const Progress = () => {
     color: subject.color
   }));
 
+  const handleAddSubject = () => {
+    if (!newSubject.name) {
+      toast.error("Please enter a subject name");
+      return;
+    }
+    
+    if (newSubject.lessons <= 0) {
+      toast.error("Please enter a valid number of lessons");
+      return;
+    }
+    
+    if (newSubject.completed > newSubject.lessons) {
+      toast.error("Completed lessons cannot exceed total lessons");
+      return;
+    }
+
+    const updatedSubjects = [
+      ...subjects,
+      {
+        ...newSubject,
+        color: getRandomColor()
+      }
+    ];
+
+    setSubjects(updatedSubjects);
+    setNewSubject({
+      name: "",
+      lessons: 0,
+      completed: 0
+    });
+    setIsAddDialogOpen(false);
+    toast.success("Subject added successfully");
+  };
+
+  const handleEditSubject = () => {
+    if (!editingSubject) return;
+    
+    if (!editingSubject.name) {
+      toast.error("Please enter a subject name");
+      return;
+    }
+    
+    if (editingSubject.lessons <= 0) {
+      toast.error("Please enter a valid number of lessons");
+      return;
+    }
+    
+    if (editingSubject.completed > editingSubject.lessons) {
+      toast.error("Completed lessons cannot exceed total lessons");
+      return;
+    }
+
+    const updatedSubjects = subjects.map(subject => 
+      subject.name === editingSubject.name ? editingSubject : subject
+    );
+
+    setSubjects(updatedSubjects);
+    setEditingSubject(null);
+    setIsEditDialogOpen(false);
+    toast.success("Subject updated successfully");
+  };
+
+  const handleDeleteSubject = () => {
+    if (!subjectToDelete) return;
+    
+    const updatedSubjects = subjects.filter(
+      subject => subject.name !== subjectToDelete.name
+    );
+    
+    setSubjects(updatedSubjects);
+    setSubjectToDelete(null);
+    toast.success("Subject deleted successfully");
+  };
+
+  const openEditDialog = (subject: Subject) => {
+    setEditingSubject({...subject});
+    setIsEditDialogOpen(true);
+  };
+
+  const confirmDeleteSubject = (subject: Subject) => {
+    setSubjectToDelete(subject);
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Progress Tracker</h1>
+        <div className="flex justify-between items-center mb-2">
+          <h1 className="text-3xl font-bold tracking-tight">Progress Tracker</h1>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-studyhub-600 hover:bg-studyhub-700">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Subject
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Subject</DialogTitle>
+                <DialogDescription>
+                  Add a new subject to track your progress
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Subject Name</label>
+                  <Input
+                    placeholder="E.g., Mathematics"
+                    value={newSubject.name}
+                    onChange={(e) => setNewSubject({ ...newSubject, name: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Total Lessons</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="E.g., 20"
+                    value={newSubject.lessons || ""}
+                    onChange={(e) => setNewSubject({ ...newSubject, lessons: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Completed Lessons</label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="E.g., 5"
+                    value={newSubject.completed || ""}
+                    onChange={(e) => setNewSubject({ ...newSubject, completed: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddSubject}>
+                  Add Subject
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
         <p className="text-muted-foreground">
           Track your learning progress across all subjects
         </p>
@@ -143,62 +333,74 @@ const Progress = () => {
               </TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={150}
-                    innerRadius={60}
-                    labelLine={true}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    dataKey="value"
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value, name) => [
-                      `${value} lessons`,
-                      `${name}`
-                    ]}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              {subjects.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={150}
+                      innerRadius={60}
+                      labelLine={true}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      dataKey="value"
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value, name) => [
+                        `${value} lessons`,
+                        `${name}`
+                      ]}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No subjects added yet</p>
+                </div>
+              )}
             </TabsContent>
             <TabsContent value="detailed" className="h-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={barData}
-                  margin={{
-                    top: 20,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis label={{ value: 'Lessons', angle: -90, position: 'insideLeft' }} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar 
-                    dataKey="completed" 
-                    stackId="a" 
-                    name="Completed" 
-                    fill="#4CAF50"
-                  />
-                  <Bar 
-                    dataKey="remaining" 
-                    stackId="a" 
-                    name="Remaining" 
-                    fill="#FFA726"
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              {subjects.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={barData}
+                    margin={{
+                      top: 20,
+                      right: 30,
+                      left: 20,
+                      bottom: 5,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis label={{ value: 'Lessons', angle: -90, position: 'insideLeft' }} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar 
+                      dataKey="completed" 
+                      stackId="a" 
+                      name="Completed" 
+                      fill="#4CAF50"
+                    />
+                    <Bar 
+                      dataKey="remaining" 
+                      stackId="a" 
+                      name="Remaining" 
+                      fill="#FFA726"
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <p className="text-muted-foreground">No subjects added yet</p>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -212,37 +414,135 @@ const Progress = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            {subjects.map((subject) => {
-              const percentage = Math.round((subject.completed / subject.lessons) * 100);
-              return (
-                <div key={subject.name} className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-medium">{subject.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {subject.completed} of {subject.lessons} lessons completed
-                      </p>
+          {subjects.length === 0 ? (
+            <div className="text-center py-12">
+              <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-medium">No subjects added</h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto mt-2">
+                Add subjects to track your learning progress
+              </p>
+              <Button 
+                onClick={() => setIsAddDialogOpen(true)}
+                className="mt-4"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Your First Subject
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {subjects.map((subject) => {
+                const percentage = Math.round((subject.completed / subject.lessons) * 100);
+                return (
+                  <div key={subject.name} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="font-medium">{subject.name}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {subject.completed} of {subject.lessons} lessons completed
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span 
+                          className="font-bold text-sm bg-muted px-2 py-1 rounded-full"
+                          style={{ color: subject.color }}
+                        >
+                          {percentage}%
+                        </span>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => openEditDialog(subject)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Subject</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete {subject.name}? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => confirmDeleteSubject(subject)}>
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                     </div>
-                    <span 
-                      className="font-bold text-sm bg-muted px-2 py-1 rounded-full"
-                      style={{ color: subject.color }}
-                    >
-                      {percentage}%
-                    </span>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className="h-full transition-all duration-500 ease-in-out"
+                        style={{ width: `${percentage}%`, backgroundColor: subject.color }}
+                      ></div>
+                    </div>
                   </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div 
-                      className="h-full transition-all duration-500 ease-in-out"
-                      style={{ width: `${percentage}%`, backgroundColor: subject.color }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Edit Subject Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Subject</DialogTitle>
+            <DialogDescription>
+              Update the details for this subject
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Subject Name</label>
+              <Input
+                placeholder="E.g., Mathematics"
+                value={editingSubject?.name || ""}
+                onChange={(e) => setEditingSubject(prev => prev ? {...prev, name: e.target.value} : null)}
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Total Lessons</label>
+              <Input
+                type="number"
+                min="1"
+                placeholder="E.g., 20"
+                value={editingSubject?.lessons || ""}
+                onChange={(e) => setEditingSubject(prev => prev ? {...prev, lessons: parseInt(e.target.value) || 0} : null)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Completed Lessons</label>
+              <Input
+                type="number"
+                min="0"
+                placeholder="E.g., 5"
+                value={editingSubject?.completed || ""}
+                onChange={(e) => setEditingSubject(prev => prev ? {...prev, completed: parseInt(e.target.value) || 0} : null)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSubject}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

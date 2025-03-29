@@ -33,6 +33,8 @@ interface Alarm {
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
+const ALARM_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3";
+
 const Alarm = () => {
   const [alarms, setAlarms] = useState<Alarm[]>([
     {
@@ -374,7 +376,7 @@ const Alarm = () => {
         </CardContent>
       </Card>
 
-      <audio ref={audioRef} src="/alarm-sound.mp3" preload="auto" />
+      <audio ref={audioRef} src={ALARM_SOUND_URL} preload="auto" />
     </div>
   );
 };
