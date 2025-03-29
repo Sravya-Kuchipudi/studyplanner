@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { BookOpen } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface LoginCredentials {
   username: string;
@@ -23,6 +24,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,9 +37,8 @@ const Login = () => {
       );
 
       if (isValid) {
-        // Save login state
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("username", username);
+        // Call the login function from AuthContext
+        login(username);
         
         toast.success("Login successful!");
         navigate("/dashboard");
