@@ -123,84 +123,84 @@ const Progress = () => {
 
       <Card className="col-span-3">
         <CardHeader>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="flex justify-between items-center">
-              <CardTitle>Progress Visualization</CardTitle>
-              <TabsList>
-                <TabsTrigger value="overview" className="flex items-center gap-1">
-                  <PieChartIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Overview</span>
-                </TabsTrigger>
-                <TabsTrigger value="detailed" className="flex items-center gap-1">
-                  <BarChartIcon className="h-4 w-4" />
-                  <span className="hidden sm:inline">Detailed</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
-          </Tabs>
+          <div className="flex justify-between items-center">
+            <CardTitle>Progress Visualization</CardTitle>
+          </div>
           <CardDescription>
             Visualize your study progress across different subjects
           </CardDescription>
         </CardHeader>
         <CardContent className="h-[400px] pt-4">
-          <TabsContent value="overview" className="h-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={150}
-                  innerRadius={60}
-                  labelLine={true}
-                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  dataKey="value"
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="overview" className="flex items-center gap-1">
+                <PieChartIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Overview</span>
+              </TabsTrigger>
+              <TabsTrigger value="detailed" className="flex items-center gap-1">
+                <BarChartIcon className="h-4 w-4" />
+                <span className="hidden sm:inline">Detailed</span>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview" className="h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={150}
+                    innerRadius={60}
+                    labelLine={true}
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    formatter={(value, name) => [
+                      `${value} lessons`,
+                      `${name}`
+                    ]}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </TabsContent>
+            <TabsContent value="detailed" className="h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={barData}
+                  margin={{
+                    top: 20,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
                 >
-                  {pieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value, name) => [
-                    `${value} lessons`,
-                    `${name}`
-                  ]}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </TabsContent>
-          <TabsContent value="detailed" className="h-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={barData}
-                margin={{
-                  top: 20,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis label={{ value: 'Lessons', angle: -90, position: 'insideLeft' }} />
-                <Tooltip />
-                <Legend />
-                <Bar 
-                  dataKey="completed" 
-                  stackId="a" 
-                  name="Completed" 
-                  fill="#4CAF50"
-                />
-                <Bar 
-                  dataKey="remaining" 
-                  stackId="a" 
-                  name="Remaining" 
-                  fill="#FFA726"
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </TabsContent>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis label={{ value: 'Lessons', angle: -90, position: 'insideLeft' }} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar 
+                    dataKey="completed" 
+                    stackId="a" 
+                    name="Completed" 
+                    fill="#4CAF50"
+                  />
+                  <Bar 
+                    dataKey="remaining" 
+                    stackId="a" 
+                    name="Remaining" 
+                    fill="#FFA726"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
 
