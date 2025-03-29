@@ -23,6 +23,11 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import * as pdfjs from 'pdfjs-dist';
+import { TextItem } from 'pdfjs-dist/types/src/display/api';
+
+// Set the PDF.js worker source
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 interface NoteFile {
   id: string;
@@ -30,7 +35,8 @@ interface NoteFile {
   type: string;
   size: string;
   lastModified: string;
-  content?: string; // For demo purposes
+  content?: string; // For text content
+  pdfUrl?: string; // For PDF content
 }
 
 const SAMPLE_FILES: NoteFile[] = [
@@ -65,18 +71,41 @@ const MyNotes = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFile, setSelectedFile] = useState<NoteFile | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
+  const [pdfPageText, setPdfPageText] = useState<string>("");
+  const [pdfPageNum, setPdfPageNum] = useState<number>(1);
+  const [pdfTotalPages, setPdfTotalPages] = useState<number>(0);
+  const [isLoadingPdf, setIsLoadingPdf] = useState<boolean>(false);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (fileList && fileList.length > 0) {
-      const newFiles: NoteFile[] = Array.from(fileList).map(file => ({
-        id: crypto.randomUUID(),
-        name: file.name,
-        type: file.name.split('.').pop() || "unknown",
-        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-        lastModified: new Date(file.lastModified).toLocaleDateString(),
-        content: "This is a sample content for the uploaded file. In a real application, this would be the actual file content."
-      }));
+      const newFiles: NoteFile[] = [];
+      
+      for (const file of Array.from(fileList)) {
+        const fileId = crypto.randomUUID();
+        const fileType = file.name.split('.').pop() || "unknown";
+        
+        // Create a URL for the file
+        const fileUrl = URL.createObjectURL(file);
+        
+        const newFile: NoteFile = {
+          id: fileId,
+          name: file.name,
+          type: fileType,
+          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+          lastModified: new Date(file.lastModified).toLocaleDateString(),
+        };
+        
+        // If it's a PDF, we'll handle it specially
+        if (fileType === 'pdf') {
+          newFile.pdfUrl = fileUrl;
+        } else {
+          // For non-PDF files, we'll just store a placeholder
+          newFile.content = "Content for uploaded file. In a real application, this would show the actual file content.";
+        }
+        
+        newFiles.push(newFile);
+      }
       
       setFiles([...files, ...newFiles]);
       toast.success(`Uploaded ${newFiles.length} file(s) successfully`);
@@ -85,13 +114,71 @@ const MyNotes = () => {
   };
 
   const handleDeleteFile = (id: string) => {
+    // Revoke object URL if it exists
+    const fileToDelete = files.find(file => file.id === id);
+    if (fileToDelete?.pdfUrl) {
+      URL.revokeObjectURL(fileToDelete.pdfUrl);
+    }
+    
     setFiles(files.filter(file => file.id !== id));
     toast.success("File deleted successfully");
   };
 
-  const handleViewFile = (file: NoteFile) => {
+  const handleViewFile = async (file: NoteFile) => {
     setSelectedFile(file);
     setViewOpen(true);
+    
+    // If it's a PDF and has a URL, load it
+    if (file.type === 'pdf' && file.pdfUrl) {
+      try {
+        setIsLoadingPdf(true);
+        const pdf = await pdfjs.getDocument(file.pdfUrl).promise;
+        setPdfTotalPages(pdf.numPages);
+        setPdfPageNum(1);
+        
+        // Load first page
+        const page = await pdf.getPage(1);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item) => (item as TextItem).str)
+          .join(' ');
+        
+        setPdfPageText(pageText);
+      } catch (error) {
+        console.error("Error loading PDF:", error);
+        toast.error("Failed to load PDF. Please try again.");
+      } finally {
+        setIsLoadingPdf(false);
+      }
+    }
+  };
+
+  const handlePdfPageChange = async (direction: 'prev' | 'next') => {
+    if (!selectedFile?.pdfUrl) return;
+    
+    try {
+      setIsLoadingPdf(true);
+      const newPageNum = direction === 'next' 
+        ? Math.min(pdfPageNum + 1, pdfTotalPages)
+        : Math.max(pdfPageNum - 1, 1);
+      
+      if (newPageNum !== pdfPageNum) {
+        const pdf = await pdfjs.getDocument(selectedFile.pdfUrl).promise;
+        const page = await pdf.getPage(newPageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item) => (item as TextItem).str)
+          .join(' ');
+        
+        setPdfPageText(pageText);
+        setPdfPageNum(newPageNum);
+      }
+    } catch (error) {
+      console.error("Error changing PDF page:", error);
+      toast.error("Failed to change page. Please try again.");
+    } finally {
+      setIsLoadingPdf(false);
+    }
   };
 
   const filteredFiles = files.filter(file => 
@@ -239,22 +326,56 @@ const MyNotes = () => {
           </DialogHeader>
           <div className="flex-1 overflow-auto p-6 bg-muted/30 rounded-md border">
             {selectedFile && (
-              <div className="h-full flex items-center justify-center">
-                {/* In a real app, this would render the actual file content */}
-                <div className="text-center">
-                  <FileText className={cn(
-                    "h-16 w-16 mx-auto mb-4",
-                    selectedFile.type === "pdf" ? "text-red-500" : "text-blue-500"
-                  )} />
-                  <h3 className="text-lg font-medium mb-2">Document Preview</h3>
-                  <p className="text-muted-foreground">
-                    {selectedFile.content}
-                  </p>
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    In a real application, the document would be rendered here using
-                    appropriate viewers for PDF, DOC, etc.
-                  </p>
-                </div>
+              <div className="h-full">
+                {selectedFile.type === 'pdf' && selectedFile.pdfUrl ? (
+                  <div className="flex flex-col h-full">
+                    {isLoadingPdf ? (
+                      <div className="flex items-center justify-center h-full">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="bg-white p-4 rounded-md shadow mb-4 flex-1 overflow-auto">
+                          <p className="whitespace-pre-line">{pdfPageText}</p>
+                        </div>
+                        <div className="flex justify-between items-center mt-4">
+                          <Button 
+                            onClick={() => handlePdfPageChange('prev')} 
+                            disabled={pdfPageNum <= 1}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Previous Page
+                          </Button>
+                          <span className="text-sm font-medium">
+                            Page {pdfPageNum} of {pdfTotalPages}
+                          </span>
+                          <Button 
+                            onClick={() => handlePdfPageChange('next')} 
+                            disabled={pdfPageNum >= pdfTotalPages}
+                            variant="outline"
+                            size="sm"
+                          >
+                            Next Page
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center">
+                      <FileText className={cn(
+                        "h-16 w-16 mx-auto mb-4",
+                        selectedFile.type === "pdf" ? "text-red-500" : "text-blue-500"
+                      )} />
+                      <h3 className="text-lg font-medium mb-2">Document Preview</h3>
+                      <p className="text-muted-foreground">
+                        {selectedFile.content}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -60,6 +60,7 @@ const Alarm = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [ringingAlarmId, setRingingAlarmId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Update current time every second
   useEffect(() => {
@@ -91,7 +92,7 @@ const Alarm = () => {
       playAlarmSound();
       toast.info(
         <div className="flex items-center gap-2">
-          <BellRing className="h-5 w-5 text-studyhub-500 animate-pulse-ring" />
+          <BellRing className="h-5 w-5 text-studyhub-500 animate-pulse" />
           <div>
             <strong>Alarm!</strong> {ringingAlarm.label}
           </div>
@@ -111,20 +112,21 @@ const Alarm = () => {
   }, [currentTime, alarms, ringingAlarmId]);
 
   const playAlarmSound = () => {
-    // In a real app, this would play an actual sound
-    console.log("Playing alarm sound...");
-    // Example implementation:
-    // const audio = new Audio('/alarm-sound.mp3');
-    // audio.loop = true;
-    // audio.play();
-    // document.getElementById('alarmAudio')?.play();
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.loop = true;
+      audioRef.current.play().catch(error => {
+        console.error("Error playing alarm sound:", error);
+        toast.error("Could not play alarm sound. Please check your browser settings.");
+      });
+    }
   };
 
   const stopAlarmSound = () => {
-    // In a real app, this would stop the sound
-    console.log("Stopping alarm sound...");
-    // Example implementation:
-    // document.getElementById('alarmAudio')?.pause();
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
   };
 
   const handleAddAlarm = () => {
@@ -179,6 +181,33 @@ const Alarm = () => {
     }
   };
 
+  // For testing purposes - allows triggering the alarm manually
+  const handleTestAlarm = () => {
+    if (!ringingAlarmId && alarms.length > 0) {
+      const testAlarm = alarms[0];
+      setRingingAlarmId(testAlarm.id);
+      playAlarmSound();
+      toast.info(
+        <div className="flex items-center gap-2">
+          <BellRing className="h-5 w-5 text-studyhub-500 animate-pulse" />
+          <div>
+            <strong>Test Alarm!</strong> {testAlarm.label}
+          </div>
+        </div>,
+        {
+          duration: 10000, // 10 seconds for test
+          action: {
+            label: "Stop",
+            onClick: () => {
+              setRingingAlarmId(null);
+              stopAlarmSound();
+            }
+          }
+        }
+      );
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -188,65 +217,74 @@ const Alarm = () => {
             Set alarms for your study sessions
           </p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-studyhub-600 hover:bg-studyhub-700">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Alarm
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add New Alarm</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Time</label>
-                <Input
-                  type="time"
-                  value={newAlarm.time}
-                  onChange={(e) => setNewAlarm({ ...newAlarm, time: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Label</label>
-                <Input
-                  placeholder="E.g., Math Study Time"
-                  value={newAlarm.label}
-                  onChange={(e) => setNewAlarm({ ...newAlarm, label: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Repeat on days</label>
-                <div className="flex flex-wrap gap-2">
-                  {WEEKDAYS.map(day => (
-                    <Button
-                      key={day}
-                      type="button"
-                      variant={newAlarm.days.includes(day) ? "default" : "outline"}
-                      className={
-                        newAlarm.days.includes(day) 
-                          ? "bg-studyhub-600 hover:bg-studyhub-700" 
-                          : ""
-                      }
-                      onClick={() => handleToggleDay(day)}
-                    >
-                      {day}
-                    </Button>
-                  ))}
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleTestAlarm}
+            className="hidden sm:flex"
+          >
+            Test Alarm
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-studyhub-600 hover:bg-studyhub-700">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Alarm
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add New Alarm</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Time</label>
+                  <Input
+                    type="time"
+                    value={newAlarm.time}
+                    onChange={(e) => setNewAlarm({ ...newAlarm, time: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Label</label>
+                  <Input
+                    placeholder="E.g., Math Study Time"
+                    value={newAlarm.label}
+                    onChange={(e) => setNewAlarm({ ...newAlarm, label: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Repeat on days</label>
+                  <div className="flex flex-wrap gap-2">
+                    {WEEKDAYS.map(day => (
+                      <Button
+                        key={day}
+                        type="button"
+                        variant={newAlarm.days.includes(day) ? "default" : "outline"}
+                        className={
+                          newAlarm.days.includes(day) 
+                            ? "bg-studyhub-600 hover:bg-studyhub-700" 
+                            : ""
+                        }
+                        onClick={() => handleToggleDay(day)}
+                      >
+                        {day}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button className="bg-studyhub-600 hover:bg-studyhub-700" onClick={handleAddAlarm}>
-                Save Alarm
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button className="bg-studyhub-600 hover:bg-studyhub-700" onClick={handleAddAlarm}>
+                  Save Alarm
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -328,7 +366,7 @@ const Alarm = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDeleteAlarm(alarm.id)}
+                      onClick={() => handleDeleteFile(alarm.id)}
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                     </Button>
@@ -340,8 +378,8 @@ const Alarm = () => {
         </CardContent>
       </Card>
 
-      {/* This audio element would be used in a real application */}
-      {/* <audio id="alarmAudio" src="/alarm-sound.mp3" loop /> */}
+      {/* Audio element for alarm sound */}
+      <audio ref={audioRef} src="/alarm-sound.mp3" preload="auto" />
     </div>
   );
 };
