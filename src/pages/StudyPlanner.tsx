@@ -3,12 +3,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Upload, PlusCircle, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, Upload, PlusCircle, Trash2, FileText } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { extractScheduleFromPDF } from "@/utils/pdfProcessor";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface ScheduleItem {
   id: string;
@@ -23,6 +31,9 @@ const StudyPlanner = () => {
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [uploadedSchedules, setUploadedSchedules] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [extractedItems, setExtractedItems] = useState<ScheduleItem[]>([]);
+  const [showExtractedDialog, setShowExtractedDialog] = useState(false);
 
   const handleAddSchedule = () => {
     if (!date || !newTitle) {
@@ -49,15 +60,62 @@ const StudyPlanner = () => {
     toast.success("Schedule item removed");
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      // In a real app, this would upload to a server
-      // For demo, we'll just keep track of the file name
-      setUploadedSchedules([...uploadedSchedules, file.name]);
+    if (!file) return;
+
+    // Keep track of the file name
+    setUploadedSchedules([...uploadedSchedules, file.name]);
+    
+    // Check if it's a PDF and process it
+    if (file.type === "application/pdf") {
+      setIsProcessing(true);
+      toast.info("Processing PDF schedule...");
+      
+      try {
+        // Read the file as ArrayBuffer
+        const buffer = await file.arrayBuffer();
+        const items = await extractScheduleFromPDF(buffer);
+        
+        if (items.length > 0) {
+          // Convert to ScheduleItem format
+          const newItems: ScheduleItem[] = items
+            .filter(item => item.date !== null)
+            .map(item => ({
+              id: crypto.randomUUID(),
+              date: item.date as Date,
+              title: item.title,
+              description: item.description
+            }));
+          
+          if (newItems.length > 0) {
+            setExtractedItems(newItems);
+            setShowExtractedDialog(true);
+          } else {
+            toast.error("Couldn't extract any valid schedule items from the PDF");
+          }
+        } else {
+          toast.error("Couldn't extract schedule from the PDF");
+        }
+      } catch (error) {
+        console.error("Error processing PDF:", error);
+        toast.error("Error processing PDF");
+      } finally {
+        setIsProcessing(false);
+        e.target.value = "";
+      }
+    } else {
+      // Not a PDF, just acknowledge upload
       toast.success(`Uploaded: ${file.name}`);
       e.target.value = "";
     }
+  };
+
+  const handleConfirmExtractedItems = () => {
+    setScheduleItems([...scheduleItems, ...extractedItems]);
+    setExtractedItems([]);
+    setShowExtractedDialog(false);
+    toast.success(`Added ${extractedItems.length} items to your schedule`);
   };
 
   const handleDeleteFile = (index: number) => {
@@ -170,7 +228,10 @@ const StudyPlanner = () => {
                     key={index}
                     className="flex items-center justify-between p-3 bg-muted rounded-md"
                   >
-                    <div className="font-medium truncate max-w-[180px]">{filename}</div>
+                    <div className="font-medium truncate max-w-[180px] flex items-center">
+                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
+                      {filename}
+                    </div>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -226,6 +287,38 @@ const StudyPlanner = () => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={showExtractedDialog} onOpenChange={setShowExtractedDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Schedule Items Found</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="mb-4 text-muted-foreground">
+              {extractedItems.length} schedule items were extracted from your PDF. Would you like to add them to your schedule?
+            </p>
+            <div className="max-h-[300px] overflow-y-auto border rounded-lg p-2">
+              {extractedItems.map((item, index) => (
+                <div key={index} className="p-3 border-b last:border-b-0">
+                  <div className="font-medium">{item.title}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Date: {format(item.date, "MMM dd, yyyy")}
+                  </div>
+                  <div className="text-sm">{item.description}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowExtractedDialog(false)}>
+              Cancel
+            </Button>
+            <Button className="bg-studyhub-600 hover:bg-studyhub-700" onClick={handleConfirmExtractedItems}>
+              Add to Schedule
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
