@@ -1,5 +1,9 @@
 
-import pdfParse from 'pdf-parse';
+import * as pdfjs from 'pdfjs-dist';
+import { TextItem } from 'pdfjs-dist/types/src/display/api';
+
+// Set the PDF.js worker source
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 export interface ExtractedScheduleItem {
   date: Date | null;
@@ -12,12 +16,25 @@ export interface ExtractedScheduleItem {
  */
 export const extractScheduleFromPDF = async (fileBuffer: ArrayBuffer): Promise<ExtractedScheduleItem[]> => {
   try {
-    // Convert ArrayBuffer to Buffer (required by pdf-parse)
-    const buffer = Buffer.from(fileBuffer);
-    const pdfData = await pdfParse(buffer);
+    console.log("Starting PDF processing with pdf.js");
     
-    const text = pdfData.text;
-    console.log("Extracted PDF text:", text);
+    // Load the PDF document
+    const loadingTask = pdfjs.getDocument({ data: fileBuffer });
+    const pdf = await loadingTask.promise;
+    console.log("PDF loaded, pages:", pdf.numPages);
+    
+    // Extract text from all pages
+    let fullText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item) => (item as TextItem).str)
+        .join(' ');
+      fullText += pageText + '\n';
+    }
+    
+    console.log("Extracted PDF text:", fullText);
     
     // Simple parsing logic - looks for patterns like:
     // Date: MM/DD/YYYY or MM-DD-YYYY
@@ -30,15 +47,15 @@ export const extractScheduleFromPDF = async (fileBuffer: ArrayBuffer): Promise<E
     const titleRegex = /(?:Title|Topic|Subject|Task):\s*([^\n]+)/gi;
     const descRegex = /(?:Description|Details|Notes):\s*([^\n]+)/gi;
     
-    let dateMatches = [...text.matchAll(dateRegex)];
-    let titleMatches = [...text.matchAll(titleRegex)];
-    let descMatches = [...text.matchAll(descRegex)];
+    let dateMatches = [...fullText.matchAll(dateRegex)];
+    let titleMatches = [...fullText.matchAll(titleRegex)];
+    let descMatches = [...fullText.matchAll(descRegex)];
     
     // If structured data wasn't found, try to infer items from the text
     if (dateMatches.length === 0) {
       // Look for date patterns in the text
       const simpleDateRegex = /(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})/g;
-      dateMatches = [...text.matchAll(simpleDateRegex)];
+      dateMatches = [...fullText.matchAll(simpleDateRegex)];
       
       // Try to extract topics near the dates
       if (dateMatches.length > 0) {
@@ -49,7 +66,7 @@ export const extractScheduleFromPDF = async (fileBuffer: ArrayBuffer): Promise<E
           const date = parseDate(dateStr);
           
           // Get the line containing this date
-          const lines = text.split('\n');
+          const lines = fullText.split('\n');
           const dateLine = lines.find(line => line.includes(dateStr)) || '';
           
           // Extract potential title (words after the date)
@@ -58,7 +75,7 @@ export const extractScheduleFromPDF = async (fileBuffer: ArrayBuffer): Promise<E
           scheduleItems.push({
             date,
             title: titlePart || `Study Session ${index + 1}`,
-            description: `Extracted from schedule PDF (page ${pdfData.numpages})`
+            description: `Extracted from schedule PDF (page ${pdf.numPages})`
           });
         });
       }
@@ -82,10 +99,11 @@ export const extractScheduleFromPDF = async (fileBuffer: ArrayBuffer): Promise<E
       scheduleItems.push({
         date: new Date(),
         title: "Study Session from PDF",
-        description: `Content: ${text.substring(0, 100)}...`
+        description: `Content: ${fullText.substring(0, 100)}...`
       });
     }
     
+    console.log("Extracted schedule items:", scheduleItems);
     return scheduleItems;
   } catch (error) {
     console.error("Error parsing PDF:", error);
