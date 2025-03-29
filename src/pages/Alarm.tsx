@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,7 +61,6 @@ const Alarm = () => {
   const [ringingAlarmId, setRingingAlarmId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Update current time every second
   useEffect(() => {
     const timerID = setInterval(() => {
       setCurrentTime(new Date());
@@ -73,7 +71,6 @@ const Alarm = () => {
     };
   }, []);
 
-  // Check for alarms that should ring
   useEffect(() => {
     const currentHour = currentTime.getHours();
     const currentMinute = currentTime.getMinutes();
@@ -181,7 +178,6 @@ const Alarm = () => {
     }
   };
 
-  // For testing purposes - allows triggering the alarm manually
   const handleTestAlarm = () => {
     if (!ringingAlarmId && alarms.length > 0) {
       const testAlarm = alarms[0];
@@ -366,7 +362,7 @@ const Alarm = () => {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDeleteFile(alarm.id)}
+                      onClick={() => handleDeleteAlarm(alarm.id)}
                     >
                       <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
                     </Button>
@@ -378,7 +374,6 @@ const Alarm = () => {
         </CardContent>
       </Card>
 
-      {/* Audio element for alarm sound */}
       <audio ref={audioRef} src="/alarm-sound.mp3" preload="auto" />
     </div>
   );
