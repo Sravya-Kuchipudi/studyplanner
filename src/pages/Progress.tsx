@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
   PieChart as PieChartIcon, 
@@ -61,34 +60,46 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart";
+import { Progress } from "@/components/ui/progress";
 
 interface Subject {
   name: string;
   lessons: number;
   completed: number;
   color: string;
+  timeSpent?: number;
 }
 
-// Initial subjects data
+const formatTime = (seconds: number): string => {
+  if (seconds < 60) return `${seconds}s`;
+  
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  } else {
+    return `${minutes}m`;
+  }
+};
+
 const initialSubjects: Subject[] = [
-  { name: "Mathematics", lessons: 24, completed: 18, color: "#6b66f8" },
-  { name: "Physics", lessons: 20, completed: 12, color: "#8189ff" },
-  { name: "Chemistry", lessons: 18, completed: 10, color: "#a0b0ff" },
-  { name: "Biology", lessons: 16, completed: 14, color: "#c4d0ff" },
-  { name: "Computer Science", lessons: 22, completed: 8, color: "#5d49eb" }
+  { name: "Mathematics", lessons: 24, completed: 18, color: "#6b66f8", timeSpent: 0 },
+  { name: "Physics", lessons: 20, completed: 12, color: "#8189ff", timeSpent: 0 },
+  { name: "Chemistry", lessons: 18, completed: 10, color: "#a0b0ff", timeSpent: 0 },
+  { name: "Biology", lessons: 16, completed: 14, color: "#c4d0ff", timeSpent: 0 },
+  { name: "Computer Science", lessons: 22, completed: 8, color: "#5d49eb", timeSpent: 0 }
 ];
 
-// Helper function to generate a random color
 const getRandomColor = () => {
   const colors = ["#6b66f8", "#8189ff", "#a0b0ff", "#c4d0ff", "#5d49eb", "#4c9fe0", "#5a7dc2"];
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
 const Progress = () => {
-  const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
   
-  // Dialog states
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
@@ -99,19 +110,43 @@ const Progress = () => {
   });
   const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
 
-  // Calculate total lessons and completed lessons
+  useEffect(() => {
+    const savedSubjects = localStorage.getItem('studySubjects');
+    const savedTimeData = localStorage.getItem('studyTimeSpent');
+    
+    if (savedSubjects) {
+      const parsedSubjects = JSON.parse(savedSubjects);
+      
+      if (savedTimeData) {
+        const timeData = JSON.parse(savedTimeData);
+        parsedSubjects.forEach((subject: Subject) => {
+          subject.timeSpent = timeData[subject.name] || 0;
+        });
+      }
+      
+      setSubjects(parsedSubjects);
+    } else {
+      setSubjects(initialSubjects);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (subjects.length > 0) {
+      localStorage.setItem('studySubjects', JSON.stringify(subjects));
+    }
+  }, [subjects]);
+
   const totalLessons = subjects.reduce((acc, subject) => acc + subject.lessons, 0);
   const completedLessons = subjects.reduce((acc, subject) => acc + subject.completed, 0);
   const completionPercentage = Math.round((completedLessons / totalLessons) * 100);
+  const totalTimeSpent = subjects.reduce((acc, subject) => acc + (subject.timeSpent || 0), 0);
 
-  // Prepare data for pie chart - subject distribution
   const pieData = subjects.map(subject => ({
     name: subject.name,
     value: subject.lessons,
     color: subject.color
   }));
 
-  // Prepare data for bar chart - completion by subject
   const barData = subjects.map(subject => ({
     name: subject.name,
     completed: subject.completed,
@@ -119,7 +154,12 @@ const Progress = () => {
     color: subject.color
   }));
 
-  // Prepare chart configuration for the ChartContainer
+  const timeData = subjects.map(subject => ({
+    name: subject.name,
+    value: subject.timeSpent || 0,
+    color: subject.color
+  }));
+
   const chartConfig = subjects.reduce((config, subject) => {
     return {
       ...config,
@@ -317,19 +357,18 @@ const Progress = () => {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Remaining</CardTitle>
-            <AlertCircle className="h-4 w-4 text-yellow-500" />
+            <CardTitle className="text-sm font-medium">Time Spent</CardTitle>
+            <Clock className="h-4 w-4 text-yellow-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalLessons - completedLessons}</div>
+            <div className="text-2xl font-bold">{formatTime(totalTimeSpent)}</div>
             <p className="text-xs text-muted-foreground">
-              Lessons yet to complete
+              Total study time
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Progress Visualization Section - Fixed Height */}
       <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
@@ -350,9 +389,12 @@ const Progress = () => {
                 <BarChartIcon className="h-4 w-4" />
                 <span className="hidden sm:inline">Detailed</span>
               </TabsTrigger>
+              <TabsTrigger value="time" className="flex items-center gap-1">
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Time Spent</span>
+              </TabsTrigger>
             </TabsList>
             
-            {/* Fixed height container for charts */}
             <div className="h-[350px] w-full">
               <TabsContent value="overview" className="h-full mt-0">
                 {subjects.length > 0 ? (
@@ -419,12 +461,39 @@ const Progress = () => {
                   </div>
                 )}
               </TabsContent>
+              <TabsContent value="time" className="h-full mt-0">
+                {subjects.length > 0 && subjects.some(s => (s.timeSpent || 0) > 0) ? (
+                  <ChartContainer className="h-full" config={chartConfig}>
+                    <PieChart>
+                      <Pie
+                        data={timeData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={120}
+                        innerRadius={60}
+                        labelLine={true}
+                        label={({ name, value }) => `${name}: ${formatTime(value as number)}`}
+                        dataKey="value"
+                      >
+                        {timeData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                    </PieChart>
+                  </ChartContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">No study time recorded yet</p>
+                  </div>
+                )}
+              </TabsContent>
             </div>
           </Tabs>
         </CardContent>
       </Card>
 
-      {/* Subject-wise Progress Section */}
       <Card>
         <CardHeader>
           <CardTitle>Subject-wise Progress</CardTitle>
@@ -449,17 +518,25 @@ const Progress = () => {
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {subjects.map((subject) => {
                 const percentage = Math.round((subject.completed / subject.lessons) * 100);
                 return (
-                  <div key={subject.name} className="space-y-2">
+                  <div key={subject.name} className="space-y-3">
                     <div className="flex justify-between items-center">
                       <div>
                         <h3 className="font-medium">{subject.name}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          {subject.completed} of {subject.lessons} lessons completed
-                        </p>
+                        <div className="flex flex-col sm:flex-row sm:gap-3 sm:items-center mt-1">
+                          <p className="text-sm text-muted-foreground">
+                            {subject.completed} of {subject.lessons} lessons completed
+                          </p>
+                          {subject.timeSpent && subject.timeSpent > 0 && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Clock className="h-3 w-3" /> 
+                              {formatTime(subject.timeSpent)}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <span 
@@ -498,12 +575,7 @@ const Progress = () => {
                         </AlertDialog>
                       </div>
                     </div>
-                    <div className="h-2 bg-muted rounded-full overflow-hidden">
-                      <div 
-                        className="h-full transition-all duration-500 ease-in-out"
-                        style={{ width: `${percentage}%`, backgroundColor: subject.color }}
-                      ></div>
-                    </div>
+                    <Progress value={percentage} className="h-2" />
                   </div>
                 );
               })}
@@ -512,7 +584,6 @@ const Progress = () => {
         </CardContent>
       </Card>
 
-      {/* Edit Subject Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>

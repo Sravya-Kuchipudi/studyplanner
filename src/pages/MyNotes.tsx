@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,8 @@ import {
   FilePlus2, 
   X,
   Download,
-  FileQuestion
+  FileQuestion,
+  Clock
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -37,6 +38,13 @@ interface NoteFile {
   lastModified: string;
   content?: string; // For text content
   pdfUrl?: string; // For PDF content
+  subject?: string; // Associated subject
+}
+
+interface Timer {
+  seconds: number;
+  isRunning: boolean;
+  subjectName: string | null;
 }
 
 const SAMPLE_FILES: NoteFile[] = [
@@ -46,7 +54,8 @@ const SAMPLE_FILES: NoteFile[] = [
     type: "pdf",
     size: "2.4 MB",
     lastModified: "2023-10-15",
-    content: "This is a sample PDF content. In a real application, this would be the actual PDF content."
+    content: "This is a sample PDF content. In a real application, this would be the actual PDF content.",
+    subject: "Mathematics"
   },
   {
     id: "2",
@@ -54,7 +63,8 @@ const SAMPLE_FILES: NoteFile[] = [
     type: "doc",
     size: "1.8 MB",
     lastModified: "2023-09-28",
-    content: "This is a sample DOC content. In a real application, this would be the actual DOC content."
+    content: "This is a sample DOC content. In a real application, this would be the actual DOC content.",
+    subject: "Physics"
   },
   {
     id: "3",
@@ -62,9 +72,39 @@ const SAMPLE_FILES: NoteFile[] = [
     type: "pdf",
     size: "4.2 MB",
     lastModified: "2023-11-05",
-    content: "This is a sample PDF content. In a real application, this would be the actual PDF content."
+    content: "This is a sample PDF content. In a real application, this would be the actual PDF content.",
+    subject: "Chemistry"
   }
 ];
+
+// Helper function to extract subject from filename
+const getSubjectFromFilename = (filename: string): string => {
+  const knownSubjects = [
+    "Mathematics", "Math", 
+    "Physics", 
+    "Chemistry", 
+    "Biology", 
+    "Computer Science", "CS", "Programming"
+  ];
+  
+  for (const subject of knownSubjects) {
+    if (filename.toLowerCase().includes(subject.toLowerCase())) {
+      return subject.includes(" ") ? subject : subject;
+    }
+  }
+  
+  // Default to "Other" if no subject found
+  return "Other";
+};
+
+// Helper function to format time
+const formatTime = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  return `${hours > 0 ? `${hours}h ` : ''}${minutes}m ${secs}s`;
+};
 
 const MyNotes = () => {
   const [files, setFiles] = useState<NoteFile[]>(SAMPLE_FILES);
@@ -75,6 +115,72 @@ const MyNotes = () => {
   const [pdfPageNum, setPdfPageNum] = useState<number>(1);
   const [pdfTotalPages, setPdfTotalPages] = useState<number>(0);
   const [isLoadingPdf, setIsLoadingPdf] = useState<boolean>(false);
+  
+  // Timer state
+  const [timer, setTimer] = useState<Timer>({
+    seconds: 0,
+    isRunning: false,
+    subjectName: null
+  });
+  
+  const timerRef = useRef<number | null>(null);
+  
+  // Load files from localStorage on mount
+  useEffect(() => {
+    const savedFiles = localStorage.getItem('studyNotes');
+    if (savedFiles) {
+      setFiles(JSON.parse(savedFiles));
+    }
+  }, []);
+  
+  // Save files to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('studyNotes', JSON.stringify(files));
+  }, [files]);
+  
+  // Timer logic
+  useEffect(() => {
+    if (timer.isRunning) {
+      timerRef.current = window.setInterval(() => {
+        setTimer(prev => ({
+          ...prev,
+          seconds: prev.seconds + 1
+        }));
+      }, 1000);
+    } else if (timerRef.current !== null) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    return () => {
+      if (timerRef.current !== null) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, [timer.isRunning]);
+  
+  // Save timer data when it stops
+  useEffect(() => {
+    if (!timer.isRunning && timer.seconds > 0 && timer.subjectName) {
+      // Save time spent to localStorage
+      const timeSpent = JSON.parse(localStorage.getItem('studyTimeSpent') || '{}');
+      timeSpent[timer.subjectName] = (timeSpent[timer.subjectName] || 0) + timer.seconds;
+      localStorage.setItem('studyTimeSpent', JSON.stringify(timeSpent));
+      
+      // Show toast notification
+      toast.success(`Study session saved: ${formatTime(timer.seconds)} on ${timer.subjectName}`);
+    }
+  }, [timer.isRunning, timer.seconds, timer.subjectName]);
+  
+  // Stop timer when dialog closes
+  useEffect(() => {
+    if (!viewOpen && timer.isRunning) {
+      setTimer(prev => ({
+        ...prev,
+        isRunning: false
+      }));
+    }
+  }, [viewOpen]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
@@ -84,6 +190,7 @@ const MyNotes = () => {
       for (const file of Array.from(fileList)) {
         const fileId = crypto.randomUUID();
         const fileType = file.name.split('.').pop() || "unknown";
+        const subject = getSubjectFromFilename(file.name);
         
         // Create a URL for the file
         const fileUrl = URL.createObjectURL(file);
@@ -94,6 +201,7 @@ const MyNotes = () => {
           type: fileType,
           size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
           lastModified: new Date(file.lastModified).toLocaleDateString(),
+          subject: subject
         };
         
         // If it's a PDF, we'll handle it specially
@@ -127,6 +235,13 @@ const MyNotes = () => {
   const handleViewFile = async (file: NoteFile) => {
     setSelectedFile(file);
     setViewOpen(true);
+    
+    // Start the timer
+    setTimer({
+      seconds: 0,
+      isRunning: true,
+      subjectName: file.subject || null
+    });
     
     // If it's a PDF and has a URL, load it
     if (file.type === 'pdf' && file.pdfUrl) {
@@ -179,6 +294,10 @@ const MyNotes = () => {
     } finally {
       setIsLoadingPdf(false);
     }
+  };
+
+  const handleDialogClose = () => {
+    setViewOpen(false);
   };
 
   const filteredFiles = files.filter(file => 
@@ -284,8 +403,14 @@ const MyNotes = () => {
                         <span>{file.type.toUpperCase()}</span>
                         <span>{file.size}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground mb-4">
-                        Last modified: {file.lastModified}
+                      <div className="text-xs text-muted-foreground mb-4 flex flex-col gap-1">
+                        <div>Last modified: {file.lastModified}</div>
+                        {file.subject && (
+                          <div className="flex items-center gap-1">
+                            <span>Subject:</span>
+                            <span className="font-medium">{file.subject}</span>
+                          </div>
+                        )}
                       </div>
                       <div className="flex justify-between">
                         <Button 
@@ -314,15 +439,25 @@ const MyNotes = () => {
         </Card>
       </div>
 
-      <Dialog open={viewOpen} onOpenChange={setViewOpen}>
+      <Dialog open={viewOpen} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>
-              {selectedFile?.name}
-            </DialogTitle>
-            <DialogDescription>
-              {selectedFile?.type.toUpperCase()} • {selectedFile?.size}
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>
+                  {selectedFile?.name}
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedFile?.type.toUpperCase()} • {selectedFile?.size}
+                </DialogDescription>
+              </div>
+              {timer.isRunning && (
+                <div className="bg-muted px-3 py-1 rounded-full flex items-center gap-2 text-sm">
+                  <Clock className="h-4 w-4 text-studyhub-500" />
+                  <span>{formatTime(timer.seconds)}</span>
+                </div>
+              )}
+            </div>
           </DialogHeader>
           <div className="flex-1 overflow-auto p-6 bg-muted/30 rounded-md border">
             {selectedFile && (
