@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -54,6 +53,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
+import { 
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent
+} from "@/components/ui/chart";
 
 interface Subject {
   name: string;
@@ -111,6 +117,17 @@ const Progress = () => {
     remaining: subject.lessons - subject.completed,
     color: subject.color
   }));
+
+  // Prepare chart configuration for the ChartContainer
+  const chartConfig = subjects.reduce((config, subject) => {
+    return {
+      ...config,
+      [subject.name]: {
+        label: subject.name,
+        color: subject.color,
+      }
+    };
+  }, {});
 
   const handleAddSubject = () => {
     if (!newSubject.name) {
@@ -334,7 +351,7 @@ const Progress = () => {
             </TabsList>
             <TabsContent value="overview" className="h-full">
               {subjects.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ChartContainer className="h-full" config={chartConfig}>
                   <PieChart>
                     <Pie
                       data={pieData}
@@ -350,15 +367,10 @@ const Progress = () => {
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip
-                      formatter={(value, name) => [
-                        `${value} lessons`,
-                        `${name}`
-                      ]}
-                    />
-                    <Legend />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
                   </PieChart>
-                </ResponsiveContainer>
+                </ChartContainer>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <p className="text-muted-foreground">No subjects added yet</p>
@@ -367,7 +379,7 @@ const Progress = () => {
             </TabsContent>
             <TabsContent value="detailed" className="h-full">
               {subjects.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ChartContainer className="h-full" config={chartConfig}>
                   <BarChart
                     data={barData}
                     margin={{
@@ -380,8 +392,8 @@ const Progress = () => {
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="name" />
                     <YAxis label={{ value: 'Lessons', angle: -90, position: 'insideLeft' }} />
-                    <Tooltip />
-                    <Legend />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
                     <Bar 
                       dataKey="completed" 
                       stackId="a" 
@@ -395,7 +407,7 @@ const Progress = () => {
                       fill="#FFA726"
                     />
                   </BarChart>
-                </ResponsiveContainer>
+                </ChartContainer>
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <p className="text-muted-foreground">No subjects added yet</p>
