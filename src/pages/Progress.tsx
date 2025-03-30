@@ -60,7 +60,7 @@ import {
   ChartLegend,
   ChartLegendContent
 } from "@/components/ui/chart";
-import { Progress } from "@/components/ui/progress";
+import { Progress as ProgressBar } from "@/components/ui/progress";
 
 interface Subject {
   name: string;
@@ -96,7 +96,7 @@ const getRandomColor = () => {
   return colors[Math.floor(Math.random() * colors.length)];
 };
 
-const Progress = () => {
+const ProgressTracker = () => {
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
   
@@ -575,7 +575,7 @@ const Progress = () => {
                         </AlertDialog>
                       </div>
                     </div>
-                    <Progress value={percentage} className="h-2" />
+                    <ProgressBar value={percentage} className="h-2" />
                   </div>
                 );
               })}
@@ -637,4 +637,4 @@ const Progress = () => {
   );
 };
 
-export default Progress;
+export default ProgressTracker;
