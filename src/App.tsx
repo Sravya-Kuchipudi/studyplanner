@@ -7,7 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login";
 import StudyPlanner from "./pages/StudyPlanner";
-import Progress from "./pages/Progress";
+import ProgressTracker from "./pages/Progress";
 import MyNotes from "./pages/MyNotes";
 import Alarm from "./pages/Alarm";
 import Chat from "./pages/Chat";
@@ -15,39 +15,42 @@ import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-const queryClient = new QueryClient();
+const App = () => {
+  // Create a new QueryClient instance inside the component
+  const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Login />} />
-            
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
-              }
-            >
-              <Route path="/dashboard" element={<StudyPlanner />} />
-              <Route path="/progress" element={<Progress />} />
-              <Route path="/notes" element={<MyNotes />} />
-              <Route path="/alarm" element={<Alarm />} />
-              <Route path="/chat" element={<Chat />} />
-            </Route>
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Login />} />
+              
+              <Route 
+                path="/" 
+                element={
+                  <ProtectedRoute>
+                    <DashboardLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route path="/dashboard" element={<StudyPlanner />} />
+                <Route path="/progress" element={<ProgressTracker />} />
+                <Route path="/notes" element={<MyNotes />} />
+                <Route path="/alarm" element={<Alarm />} />
+                <Route path="/chat" element={<Chat />} />
+              </Route>
+              
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
