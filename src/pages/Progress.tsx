@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -328,7 +329,8 @@ const Progress = () => {
         </Card>
       </div>
 
-      <Card className="col-span-3">
+      {/* Progress Visualization Section - Fixed Height */}
+      <Card>
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Progress Visualization</CardTitle>
@@ -337,7 +339,7 @@ const Progress = () => {
             Visualize your study progress across different subjects
           </CardDescription>
         </CardHeader>
-        <CardContent className="h-[400px] pt-4">
+        <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger value="overview" className="flex items-center gap-1">
@@ -349,75 +351,80 @@ const Progress = () => {
                 <span className="hidden sm:inline">Detailed</span>
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="overview" className="h-full">
-              {subjects.length > 0 ? (
-                <ChartContainer className="h-full" config={chartConfig}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={150}
-                      innerRadius={60}
-                      labelLine={true}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      dataKey="value"
+            
+            {/* Fixed height container for charts */}
+            <div className="h-[350px] w-full">
+              <TabsContent value="overview" className="h-full mt-0">
+                {subjects.length > 0 ? (
+                  <ChartContainer className="h-full" config={chartConfig}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={120}
+                        innerRadius={60}
+                        labelLine={true}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        dataKey="value"
+                      >
+                        {pieData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                    </PieChart>
+                  </ChartContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">No subjects added yet</p>
+                  </div>
+                )}
+              </TabsContent>
+              <TabsContent value="detailed" className="h-full mt-0">
+                {subjects.length > 0 ? (
+                  <ChartContainer className="h-full" config={chartConfig}>
+                    <BarChart
+                      data={barData}
+                      margin={{
+                        top: 20,
+                        right: 30,
+                        left: 20,
+                        bottom: 5,
+                      }}
                     >
-                      {pieData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                  </PieChart>
-                </ChartContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-muted-foreground">No subjects added yet</p>
-                </div>
-              )}
-            </TabsContent>
-            <TabsContent value="detailed" className="h-full">
-              {subjects.length > 0 ? (
-                <ChartContainer className="h-full" config={chartConfig}>
-                  <BarChart
-                    data={barData}
-                    margin={{
-                      top: 20,
-                      right: 30,
-                      left: 20,
-                      bottom: 5,
-                    }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" />
-                    <YAxis label={{ value: 'Lessons', angle: -90, position: 'insideLeft' }} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Bar 
-                      dataKey="completed" 
-                      stackId="a" 
-                      name="Completed" 
-                      fill="#4CAF50"
-                    />
-                    <Bar 
-                      dataKey="remaining" 
-                      stackId="a" 
-                      name="Remaining" 
-                      fill="#FFA726"
-                    />
-                  </BarChart>
-                </ChartContainer>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <p className="text-muted-foreground">No subjects added yet</p>
-                </div>
-              )}
-            </TabsContent>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis label={{ value: 'Lessons', angle: -90, position: 'insideLeft' }} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
+                      <Bar 
+                        dataKey="completed" 
+                        stackId="a" 
+                        name="Completed" 
+                        fill="#4CAF50"
+                      />
+                      <Bar 
+                        dataKey="remaining" 
+                        stackId="a" 
+                        name="Remaining" 
+                        fill="#FFA726"
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                ) : (
+                  <div className="flex items-center justify-center h-full">
+                    <p className="text-muted-foreground">No subjects added yet</p>
+                  </div>
+                )}
+              </TabsContent>
+            </div>
           </Tabs>
         </CardContent>
       </Card>
 
+      {/* Subject-wise Progress Section */}
       <Card>
         <CardHeader>
           <CardTitle>Subject-wise Progress</CardTitle>
