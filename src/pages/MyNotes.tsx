@@ -12,7 +12,8 @@ import {
   X,
   Download,
   FileQuestion,
-  Clock
+  Clock,
+  AlertCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -39,6 +40,7 @@ interface NoteFile {
   content?: string; // For text content
   pdfUrl?: string; // For PDF content
   subject?: string; // Associated subject
+  text?: string; // Extracted text content
 }
 
 interface Timer {
@@ -106,8 +108,50 @@ const formatTime = (seconds: number): string => {
   return `${hours > 0 ? `${hours}h ` : ''}${minutes}m ${secs}s`;
 };
 
+// Helper function to extract text from PDF files
+const extractTextFromPdf = async (url: string): Promise<string> => {
+  try {
+    const pdf = await pdfjs.getDocument(url).promise;
+    let fullText = '';
+    
+    // Extract text from first 5 pages (or fewer if the document has fewer pages)
+    const maxPages = Math.min(pdf.numPages, 5);
+    
+    for (let i = 1; i <= maxPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item) => (item as TextItem).str)
+        .join(' ');
+      
+      fullText += pageText + ' ';
+    }
+    
+    return fullText.trim();
+  } catch (error) {
+    console.error("Error extracting text from PDF:", error);
+    return "Failed to extract text from PDF.";
+  }
+};
+
+// Helper function to read text files
+const readTextFile = async (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      if (e.target?.result) {
+        resolve(e.target.result as string);
+      } else {
+        reject(new Error("Failed to read file"));
+      }
+    };
+    reader.onerror = () => reject(new Error("FileReader error"));
+    reader.readAsText(file);
+  });
+};
+
 const MyNotes = () => {
-  const [files, setFiles] = useState<NoteFile[]>(SAMPLE_FILES);
+  const [files, setFiles] = useState<NoteFile[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFile, setSelectedFile] = useState<NoteFile | null>(null);
   const [viewOpen, setViewOpen] = useState(false);
@@ -115,6 +159,7 @@ const MyNotes = () => {
   const [pdfPageNum, setPdfPageNum] = useState<number>(1);
   const [pdfTotalPages, setPdfTotalPages] = useState<number>(0);
   const [isLoadingPdf, setIsLoadingPdf] = useState<boolean>(false);
+  const [isUploadingFile, setIsUploadingFile] = useState<boolean>(false);
   
   // Timer state
   const [timer, setTimer] = useState<Timer>({
@@ -129,7 +174,15 @@ const MyNotes = () => {
   useEffect(() => {
     const savedFiles = localStorage.getItem('studyNotes');
     if (savedFiles) {
-      setFiles(JSON.parse(savedFiles));
+      try {
+        const parsedFiles = JSON.parse(savedFiles);
+        setFiles(parsedFiles);
+      } catch (error) {
+        console.error("Error parsing saved files:", error);
+        setFiles(SAMPLE_FILES);
+      }
+    } else {
+      setFiles(SAMPLE_FILES);
     }
   }, []);
   
@@ -185,39 +238,61 @@ const MyNotes = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (fileList && fileList.length > 0) {
+      setIsUploadingFile(true);
       const newFiles: NoteFile[] = [];
       
-      for (const file of Array.from(fileList)) {
-        const fileId = crypto.randomUUID();
-        const fileType = file.name.split('.').pop() || "unknown";
-        const subject = getSubjectFromFilename(file.name);
-        
-        // Create a URL for the file
-        const fileUrl = URL.createObjectURL(file);
-        
-        const newFile: NoteFile = {
-          id: fileId,
-          name: file.name,
-          type: fileType,
-          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-          lastModified: new Date(file.lastModified).toLocaleDateString(),
-          subject: subject
-        };
-        
-        // If it's a PDF, we'll handle it specially
-        if (fileType === 'pdf') {
-          newFile.pdfUrl = fileUrl;
-        } else {
-          // For non-PDF files, we'll just store a placeholder
-          newFile.content = "Content for uploaded file. In a real application, this would show the actual file content.";
+      try {
+        for (const file of Array.from(fileList)) {
+          const fileId = crypto.randomUUID();
+          const fileType = file.name.split('.').pop()?.toLowerCase() || "unknown";
+          const subject = getSubjectFromFilename(file.name);
+          
+          // Create a URL for the file
+          const fileUrl = URL.createObjectURL(file);
+          
+          const newFile: NoteFile = {
+            id: fileId,
+            name: file.name,
+            type: fileType,
+            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+            lastModified: new Date(file.lastModified).toLocaleDateString(),
+            subject: subject
+          };
+          
+          // Handle different file types
+          if (fileType === 'pdf') {
+            newFile.pdfUrl = fileUrl;
+            // Extract text from PDF for preview
+            const extractedText = await extractTextFromPdf(fileUrl);
+            newFile.text = extractedText;
+          } else if (['txt', 'md', 'csv'].includes(fileType)) {
+            // Read text files directly
+            const textContent = await readTextFile(file);
+            newFile.content = textContent;
+            newFile.text = textContent.substring(0, 500) + (textContent.length > 500 ? '...' : '');
+          } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(fileType)) {
+            // For Office documents, just store the URL and a placeholder
+            newFile.pdfUrl = fileUrl;
+            newFile.content = `Content for ${fileType.toUpperCase()} file. Upload a PDF for better preview.`;
+          } else {
+            // For other files, just store a placeholder
+            newFile.content = `Content for uploaded file. File type: ${fileType.toUpperCase()}`;
+          }
+          
+          newFiles.push(newFile);
         }
         
-        newFiles.push(newFile);
+        setFiles([...files, ...newFiles]);
+        toast.success(`Uploaded ${newFiles.length} file(s) successfully`);
+      } catch (error) {
+        console.error("Error processing uploaded files:", error);
+        toast.error("Error processing some files. Please try again.");
+      } finally {
+        setIsUploadingFile(false);
+        if (e.target) {
+          e.target.value = "";
+        }
       }
-      
-      setFiles([...files, ...newFiles]);
-      toast.success(`Uploaded ${newFiles.length} file(s) successfully`);
-      e.target.value = "";
     }
   };
 
@@ -296,6 +371,20 @@ const MyNotes = () => {
     }
   };
 
+  const handleDownloadFile = (file: NoteFile) => {
+    if (file.pdfUrl) {
+      const link = document.createElement('a');
+      link.href = file.pdfUrl;
+      link.download = file.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success(`Downloading ${file.name}`);
+    } else {
+      toast.error("Download link not available for this file");
+    }
+  };
+
   const handleDialogClose = () => {
     setViewOpen(false);
   };
@@ -329,14 +418,32 @@ const MyNotes = () => {
             id="file-upload"
             className="hidden"
             onChange={handleFileUpload}
-            accept=".pdf,.doc,.docx"
+            accept=".pdf,.doc,.docx,.txt,.md,.csv"
             multiple
+            disabled={isUploadingFile}
           />
           <label htmlFor="file-upload">
-            <Button variant="default" className="bg-studyhub-600 hover:bg-studyhub-700 cursor-pointer" asChild>
+            <Button 
+              variant="default" 
+              className={cn(
+                "bg-studyhub-600 hover:bg-studyhub-700 cursor-pointer",
+                isUploadingFile && "opacity-70 cursor-not-allowed"
+              )} 
+              disabled={isUploadingFile}
+              asChild
+            >
               <div>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload
+                {isUploadingFile ? (
+                  <>
+                    <span className="animate-spin mr-2 h-4 w-4 border-t-2 border-b-2 border-white rounded-full" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload
+                  </>
+                )}
               </div>
             </Button>
           </label>
@@ -384,7 +491,10 @@ const MyNotes = () => {
                       <div className="flex items-center gap-2">
                         <FileText className={cn(
                           "h-5 w-5",
-                          file.type === "pdf" ? "text-red-500" : "text-blue-500"
+                          file.type === "pdf" ? "text-red-500" : 
+                          file.type === "doc" || file.type === "docx" ? "text-blue-500" : 
+                          file.type === "txt" || file.type === "md" ? "text-green-500" : 
+                          "text-gray-500"
                         )} />
                         <span className="font-medium truncate max-w-[120px]">
                           {file.name}
@@ -425,6 +535,7 @@ const MyNotes = () => {
                           variant="outline" 
                           size="sm"
                           className="text-xs"
+                          onClick={() => handleDownloadFile(file)}
                         >
                           <Download className="h-3 w-3 mr-1" />
                           Download
@@ -497,17 +608,34 @@ const MyNotes = () => {
                       </>
                     )}
                   </div>
+                ) : selectedFile.type === 'txt' || selectedFile.type === 'md' || selectedFile.type === 'csv' ? (
+                  <div className="bg-white p-4 rounded-md shadow h-full overflow-auto">
+                    <pre className="whitespace-pre-wrap font-sans text-sm">
+                      {selectedFile.content}
+                    </pre>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-full">
                     <div className="text-center">
                       <FileText className={cn(
                         "h-16 w-16 mx-auto mb-4",
-                        selectedFile.type === "pdf" ? "text-red-500" : "text-blue-500"
+                        selectedFile.type === "pdf" ? "text-red-500" : 
+                        selectedFile.type === "doc" || selectedFile.type === "docx" ? "text-blue-500" : 
+                        "text-gray-500"
                       )} />
                       <h3 className="text-lg font-medium mb-2">Document Preview</h3>
-                      <p className="text-muted-foreground">
-                        {selectedFile.content}
-                      </p>
+                      {selectedFile.text ? (
+                        <div className="text-muted-foreground max-h-[400px] overflow-auto p-4 text-left border rounded-md bg-white">
+                          <p className="whitespace-pre-line">{selectedFile.text}</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <AlertCircle className="h-6 w-6 text-yellow-500" />
+                          <p className="text-muted-foreground">
+                            Preview not available for this file type.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
