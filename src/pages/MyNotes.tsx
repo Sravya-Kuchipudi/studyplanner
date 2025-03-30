@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,8 +27,9 @@ import { cn } from "@/lib/utils";
 import * as pdfjs from 'pdfjs-dist';
 import { TextItem } from 'pdfjs-dist/types/src/display/api';
 
-// Set the PDF.js worker source
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+// Set the PDF.js worker source with the exact version
+const pdfWorkerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
 interface NoteFile {
   id: string;
@@ -111,7 +111,10 @@ const formatTime = (seconds: number): string => {
 // Helper function to extract text from PDF files
 const extractTextFromPdf = async (url: string): Promise<string> => {
   try {
-    const pdf = await pdfjs.getDocument(url).promise;
+    console.log("Extracting text from PDF with worker URL:", pdfWorkerSrc);
+    const loadingTask = pdfjs.getDocument(url);
+    const pdf = await loadingTask.promise;
+    
     let fullText = '';
     
     // Extract text from first 5 pages (or fewer if the document has fewer pages)
@@ -262,9 +265,15 @@ const MyNotes = () => {
           // Handle different file types
           if (fileType === 'pdf') {
             newFile.pdfUrl = fileUrl;
-            // Extract text from PDF for preview
-            const extractedText = await extractTextFromPdf(fileUrl);
-            newFile.text = extractedText;
+            try {
+              // Extract text from PDF for preview
+              console.log("Processing PDF file:", file.name);
+              const extractedText = await extractTextFromPdf(fileUrl);
+              newFile.text = extractedText;
+            } catch (pdfError) {
+              console.error("Error processing PDF:", pdfError);
+              newFile.text = "Could not extract text from this PDF.";
+            }
           } else if (['txt', 'md', 'csv'].includes(fileType)) {
             // Read text files directly
             const textContent = await readTextFile(file);
@@ -322,7 +331,11 @@ const MyNotes = () => {
     if (file.type === 'pdf' && file.pdfUrl) {
       try {
         setIsLoadingPdf(true);
-        const pdf = await pdfjs.getDocument(file.pdfUrl).promise;
+        console.log("Loading PDF for viewing:", file.name, "URL:", file.pdfUrl);
+        
+        const loadingTask = pdfjs.getDocument(file.pdfUrl);
+        const pdf = await loadingTask.promise;
+        
         setPdfTotalPages(pdf.numPages);
         setPdfPageNum(1);
         
@@ -337,6 +350,7 @@ const MyNotes = () => {
       } catch (error) {
         console.error("Error loading PDF:", error);
         toast.error("Failed to load PDF. Please try again.");
+        setPdfPageText("Error loading PDF content. The file might be corrupted or unsupported.");
       } finally {
         setIsLoadingPdf(false);
       }
@@ -353,7 +367,9 @@ const MyNotes = () => {
         : Math.max(pdfPageNum - 1, 1);
       
       if (newPageNum !== pdfPageNum) {
-        const pdf = await pdfjs.getDocument(selectedFile.pdfUrl).promise;
+        const loadingTask = pdfjs.getDocument(selectedFile.pdfUrl);
+        const pdf = await loadingTask.promise;
+        
         const page = await pdf.getPage(newPageNum);
         const textContent = await page.getTextContent();
         const pageText = textContent.items
