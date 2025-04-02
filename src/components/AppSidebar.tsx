@@ -25,6 +25,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 interface SidebarLinkProps {
@@ -154,6 +156,8 @@ export const AppSidebar = () => {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align={collapsed ? "center" : "start"} side="right">
+            <DropdownMenuLabel>Theme Options</DropdownMenuLabel>
+            <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => setTheme("light")} className="cursor-pointer">
               <Sun className="mr-2 h-4 w-4" />
               <span>Light</span>
@@ -164,7 +168,7 @@ export const AppSidebar = () => {
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => setTheme("colorBlind")} className="cursor-pointer">
               <Eye className="mr-2 h-4 w-4" />
-              <span>Color Blind</span>
+              <span>High Contrast (Colorblind)</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

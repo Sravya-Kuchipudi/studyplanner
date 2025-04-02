@@ -85,44 +85,50 @@
   }
 
   .color-blind {
-    --background: 200 15% 99%;
-    --foreground: 200 50% 10%;
+    /* Improved color blind theme with higher contrast and more distinguishable colors */
+    --background: 0 0% 98%;
+    --foreground: 0 0% 10%;
 
     --card: 0 0% 100%;
-    --card-foreground: 200 50% 10%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 200 50% 10%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 200 85% 45%;
+    /* Blue that is distinguishable for most color vision deficiencies */
+    --primary: 210 100% 40%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 42 100% 70%;
-    --secondary-foreground: 200 50% 10%;
+    /* Yellow that contrasts well with both blue and black */
+    --secondary: 45 100% 50%;
+    --secondary-foreground: 0 0% 10%;
 
-    --muted: 200 10% 90%;
-    --muted-foreground: 200 10% 40%;
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 40%;
 
-    --accent: 42 80% 85%;
-    --accent-foreground: 200 50% 10%;
+    /* Orange that most colorblind individuals can distinguish from other colors */
+    --accent: 25 90% 50%;
+    --accent-foreground: 0 0% 10%;
 
-    --destructive: 0 84% 60%;
+    /* High contrast red for destructive actions */
+    --destructive: 0 100% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 200 10% 85%;
-    --input: 200 10% 85%;
-    --ring: 200 85% 45%;
+    --border: 0 0% 85%;
+    --input: 0 0% 85%;
+    --ring: 210 100% 40%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 200 15% 95%;
-    --sidebar-foreground: 200 50% 10%;
-    --sidebar-primary: 200 85% 45%;
+    /* Sidebar specific values with high contrast */
+    --sidebar-background: 0 0% 94%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 210 100% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 42 80% 85%;
-    --sidebar-accent-foreground: 200 50% 10%;
-    --sidebar-border: 200 10% 85%;
-    --sidebar-ring: 200 85% 45%;
+    --sidebar-accent: 25 90% 85%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 0 0% 80%;
+    --sidebar-ring: 210 100% 40%;
   }
 }
 

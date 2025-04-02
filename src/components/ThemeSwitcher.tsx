@@ -5,6 +5,8 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Sun, Moon, Eye } from "lucide-react";
 import { useTheme } from "@/context/ThemeContext";
@@ -23,6 +25,8 @@ export function ThemeSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Theme Options</DropdownMenuLabel>
+        <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => setTheme("light")}>
           <Sun className="mr-2 h-4 w-4" />
           <span>Light</span>
@@ -33,7 +37,7 @@ export function ThemeSwitcher() {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => setTheme("colorBlind")}>
           <Eye className="mr-2 h-4 w-4" />
-          <span>Color Blind</span>
+          <span>High Contrast (Colorblind)</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
