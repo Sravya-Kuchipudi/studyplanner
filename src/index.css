@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -85,7 +84,6 @@
   }
 
   .color-blind {
-    /* Improved color blind theme with higher contrast and more distinguishable colors */
     --background: 0 0% 98%;
     --foreground: 0 0% 10%;
 
@@ -95,22 +93,18 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 10%;
 
-    /* Blue that is distinguishable for most color vision deficiencies */
     --primary: 210 100% 40%;
     --primary-foreground: 0 0% 100%;
 
-    /* Yellow that contrasts well with both blue and black */
     --secondary: 45 100% 50%;
     --secondary-foreground: 0 0% 10%;
 
     --muted: 0 0% 90%;
     --muted-foreground: 0 0% 40%;
 
-    /* Orange that most colorblind individuals can distinguish from other colors */
     --accent: 25 90% 50%;
     --accent-foreground: 0 0% 10%;
 
-    /* High contrast red for destructive actions */
     --destructive: 0 100% 45%;
     --destructive-foreground: 0 0% 100%;
 
@@ -120,7 +114,6 @@
 
     --radius: 0.5rem;
 
-    /* Sidebar specific values with high contrast */
     --sidebar-background: 0 0% 94%;
     --sidebar-foreground: 0 0% 10%;
     --sidebar-primary: 210 100% 40%;
@@ -142,7 +135,6 @@
   }
 }
 
-/* Custom scrollbar styles */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;

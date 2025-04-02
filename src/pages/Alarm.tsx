@@ -10,7 +10,8 @@ import {
   Trash2, 
   Clock,
   BellRing,
-  Volume2
+  Volume2,
+  VolumeX
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -21,6 +22,12 @@ import {
   DialogTitle, 
   DialogTrigger 
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
 import { format } from "date-fns";
 
 interface Alarm {
@@ -180,16 +187,24 @@ const Alarm = () => {
     }
   };
 
-  const handleTestAlarm = () => {
+  const handleTestAlarm = (withSound: boolean = true) => {
     if (!ringingAlarmId && alarms.length > 0) {
       const testAlarm = alarms[0];
       setRingingAlarmId(testAlarm.id);
-      playAlarmSound();
+      
+      if (withSound) {
+        playAlarmSound();
+      }
+      
       toast.info(
         <div className="flex items-center gap-2">
-          <BellRing className="h-5 w-5 text-studyhub-500 animate-pulse" />
+          {withSound ? (
+            <BellRing className="h-5 w-5 text-studyhub-500 animate-pulse" />
+          ) : (
+            <VolumeX className="h-5 w-5 text-muted-foreground" />
+          )}
           <div>
-            <strong>Test Alarm!</strong> {testAlarm.label}
+            <strong>{withSound ? "Test Alarm!" : "Silent Test Alarm!"}</strong> {testAlarm.label}
           </div>
         </div>,
         {
@@ -198,7 +213,9 @@ const Alarm = () => {
             label: "Stop",
             onClick: () => {
               setRingingAlarmId(null);
-              stopAlarmSound();
+              if (withSound) {
+                stopAlarmSound();
+              }
             }
           }
         }
@@ -216,13 +233,24 @@ const Alarm = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleTestAlarm}
-            className="hidden sm:flex"
-          >
-            Test Alarm
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="hidden sm:flex">
+                Test Alarm
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => handleTestAlarm(true)}>
+                <Volume2 className="mr-2 h-4 w-4" />
+                <span>With Sound</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleTestAlarm(false)}>
+                <VolumeX className="mr-2 h-4 w-4" />
+                <span>Without Sound (Silent)</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button className="bg-studyhub-600 hover:bg-studyhub-700">
