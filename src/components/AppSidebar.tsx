@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { 
@@ -13,9 +14,18 @@ import {
   ChevronLeft, 
   ChevronRight,
   LogOut,
-  User
+  User,
+  Sun,
+  Moon,
+  Eye
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface SidebarLinkProps {
   to: string;
@@ -48,6 +58,7 @@ const SidebarLink = ({ to, icon, label, collapsed }: SidebarLinkProps) => {
 export const AppSidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
   const { username, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
 
   const toggleSidebar = () => {
     setCollapsed(!collapsed);
@@ -125,7 +136,40 @@ export const AppSidebar = () => {
         </nav>
       </div>
 
-      <div className="p-2">
+      <div className="p-2 space-y-2">
+        {/* Theme Switcher */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className={cn(
+                "w-full justify-start text-muted-foreground hover:bg-muted",
+                collapsed && "justify-center p-2"
+              )}
+            >
+              {theme === "light" && <Sun size={collapsed ? 24 : 20} />}
+              {theme === "dark" && <Moon size={collapsed ? 24 : 20} />}
+              {theme === "colorBlind" && <Eye size={collapsed ? 24 : 20} />}
+              {!collapsed && <span className="ml-3">Theme</span>}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align={collapsed ? "center" : "start"} side="right">
+            <DropdownMenuItem onClick={() => setTheme("light")} className="cursor-pointer">
+              <Sun className="mr-2 h-4 w-4" />
+              <span>Light</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("dark")} className="cursor-pointer">
+              <Moon className="mr-2 h-4 w-4" />
+              <span>Dark</span>
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setTheme("colorBlind")} className="cursor-pointer">
+              <Eye className="mr-2 h-4 w-4" />
+              <span>Color Blind</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Logout Button */}
         <Button 
           variant="ghost" 
           className={cn(
