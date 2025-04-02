@@ -18,6 +18,17 @@
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     
     <!-- Remove the hardcoded PDF.js worker reference -->
+    <script>
+      // Inline script to prevent flash of wrong theme
+      const savedTheme = localStorage.getItem("theme");
+      if (savedTheme && ["light", "dark", "color-blind"].includes(savedTheme)) {
+        document.documentElement.classList.add(savedTheme);
+      } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.add("light");
+      }
+    </script>
   </head>
 
   <body>
