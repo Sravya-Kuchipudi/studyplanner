@@ -1,34 +1,11 @@
+
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  AlarmClock, 
-  Bell, 
-  Plus, 
-  Trash2, 
-  Clock,
-  BellRing,
-  Volume2,
-  VolumeX
-} from "lucide-react";
 import { toast } from "sonner";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
-import { format } from "date-fns";
+import { BellRing, VolumeX } from "lucide-react";
+import CurrentTime from "@/components/alarm/CurrentTime";
+import AlarmList from "@/components/alarm/AlarmList";
+import AlarmForm from "@/components/alarm/AlarmForm";
+import TestAlarmButton from "@/components/alarm/TestAlarmButton";
 
 interface Alarm {
   id: string;
@@ -39,7 +16,6 @@ interface Alarm {
 }
 
 const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
 const ALARM_SOUND_URL = "https://assets.mixkit.co/active_storage/sfx/212/212-preview.mp3";
 
 const Alarm = () => {
@@ -59,12 +35,6 @@ const Alarm = () => {
       days: ["Mon", "Wed", "Fri"]
     }
   ]);
-  const [newAlarm, setNewAlarm] = useState<Omit<Alarm, "id">>({
-    time: "",
-    active: true,
-    label: "",
-    days: []
-  });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [ringingAlarmId, setRingingAlarmId] = useState<string | null>(null);
@@ -135,7 +105,7 @@ const Alarm = () => {
     }
   };
 
-  const handleAddAlarm = () => {
+  const handleAddAlarm = (newAlarm: Omit<Alarm, "id">) => {
     if (!newAlarm.time) {
       toast.error("Please set a time for the alarm");
       return;
@@ -148,13 +118,6 @@ const Alarm = () => {
 
     const id = crypto.randomUUID();
     setAlarms([...alarms, { ...newAlarm, id }]);
-    setNewAlarm({
-      time: "",
-      active: true,
-      label: "",
-      days: []
-    });
-    setIsDialogOpen(false);
     toast.success("Alarm added successfully");
   };
 
@@ -171,20 +134,6 @@ const Alarm = () => {
           : alarm
       )
     );
-  };
-
-  const handleToggleDay = (day: string) => {
-    if (newAlarm.days.includes(day)) {
-      setNewAlarm({
-        ...newAlarm,
-        days: newAlarm.days.filter(d => d !== day)
-      });
-    } else {
-      setNewAlarm({
-        ...newAlarm,
-        days: [...newAlarm.days, day]
-      });
-    }
   };
 
   const handleTestAlarm = (withSound: boolean = true) => {
@@ -233,176 +182,24 @@ const Alarm = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="hidden sm:flex">
-                Test Alarm
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleTestAlarm(true)}>
-                <Volume2 className="mr-2 h-4 w-4" />
-                <span>With Sound</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleTestAlarm(false)}>
-                <VolumeX className="mr-2 h-4 w-4" />
-                <span>Without Sound (Silent)</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-studyhub-600 hover:bg-studyhub-700">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Alarm
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Alarm</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Time</label>
-                  <Input
-                    type="time"
-                    value={newAlarm.time}
-                    onChange={(e) => setNewAlarm({ ...newAlarm, time: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Label</label>
-                  <Input
-                    placeholder="E.g., Math Study Time"
-                    value={newAlarm.label}
-                    onChange={(e) => setNewAlarm({ ...newAlarm, label: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Repeat on days</label>
-                  <div className="flex flex-wrap gap-2">
-                    {WEEKDAYS.map(day => (
-                      <Button
-                        key={day}
-                        type="button"
-                        variant={newAlarm.days.includes(day) ? "default" : "outline"}
-                        className={
-                          newAlarm.days.includes(day) 
-                            ? "bg-studyhub-600 hover:bg-studyhub-700" 
-                            : ""
-                        }
-                        onClick={() => handleToggleDay(day)}
-                      >
-                        {day}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button className="bg-studyhub-600 hover:bg-studyhub-700" onClick={handleAddAlarm}>
-                  Save Alarm
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <TestAlarmButton onTestAlarm={handleTestAlarm} />
+          <AlarmForm 
+            onAddAlarm={handleAddAlarm} 
+            isOpen={isDialogOpen} 
+            setIsOpen={setIsDialogOpen} 
+          />
         </div>
       </div>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-xl flex items-center gap-2">
-            <Clock className="h-5 w-5 text-studyhub-500" />
-            Current Time
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-6">
-            <div className="text-4xl font-bold mb-1">
-              {format(currentTime, "hh:mm:ss a")}
-            </div>
-            <div className="text-muted-foreground">
-              {format(currentTime, "EEEE, MMMM d, yyyy")}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <CurrentTime />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlarmClock className="h-5 w-5 text-studyhub-500" />
-            Your Alarms
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {alarms.length === 0 ? (
-            <div className="text-center py-12">
-              <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium">No alarms set</h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto mt-2">
-                Set alarms to remind you of your study sessions
-              </p>
-              <Button 
-                onClick={() => setIsDialogOpen(true)}
-                className="mt-4 bg-studyhub-600 hover:bg-studyhub-700"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Add Your First Alarm
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {alarms.map(alarm => (
-                <div
-                  key={alarm.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-full ${alarm.active ? 'bg-studyhub-100 text-studyhub-700' : 'bg-muted text-muted-foreground'}`}>
-                      <Bell className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <div className="font-medium">
-                        {alarm.time} {alarm.label && `- ${alarm.label}`}
-                        {ringingAlarmId === alarm.id && (
-                          <span className="ml-2 inline-flex items-center">
-                            <Volume2 className="h-4 w-4 text-studyhub-600 animate-pulse" />
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-muted-foreground flex flex-wrap gap-1 mt-1">
-                        {alarm.days.map(day => (
-                          <span key={day} className="bg-muted px-1.5 py-0.5 rounded-md text-xs">
-                            {day}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Switch
-                      checked={alarm.active}
-                      onCheckedChange={() => handleToggleAlarm(alarm.id)}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteAlarm(alarm.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <AlarmList 
+        alarms={alarms}
+        ringingAlarmId={ringingAlarmId}
+        onToggle={handleToggleAlarm}
+        onDelete={handleDeleteAlarm}
+        onAdd={() => setIsDialogOpen(true)}
+      />
 
       <audio ref={audioRef} src={ALARM_SOUND_URL} preload="auto" />
     </div>
