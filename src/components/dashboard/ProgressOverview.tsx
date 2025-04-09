@@ -52,12 +52,12 @@ const ProgressOverview = ({ subjects, currentStreak, bestStreak }: ProgressOverv
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis
                   dataKey="name"
-                  tick={{ fontSize: 12 }}
+                  fontSize={12}
                   tickLine={false}
                   axisLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 12 }}
+                  fontSize={12}
                   tickLine={false}
                   axisLine={false}
                   domain={[0, 100]}

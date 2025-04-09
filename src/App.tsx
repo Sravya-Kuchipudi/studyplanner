@@ -8,7 +8,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import Login from "./pages/Login";
 import StudyPlanner from "./pages/StudyPlanner";
-import Dashboard from "./pages/Dashboard"; // New import
+import Dashboard from "./pages/Dashboard";
 import ProgressTracker from "./pages/Progress";
 import MyNotes from "./pages/MyNotes";
 import Alarm from "./pages/Alarm";
@@ -18,10 +18,18 @@ import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index"; // Home page
 
-const App = () => {
-  // Create a new QueryClient instance inside the component
-  const queryClient = new QueryClient();
+// Create a new QueryClient instance outside the component
+// This ensures it's not recreated on every render
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+      retry: 1,
+    },
+  },
+});
 
+const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
