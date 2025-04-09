@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,9 @@ import {
   Download,
   FileQuestion,
   Clock,
-  AlertCircle
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 import { 
@@ -339,14 +342,8 @@ const MyNotes = () => {
         setPdfTotalPages(pdf.numPages);
         setPdfPageNum(1);
         
-        // Load first page
-        const page = await pdf.getPage(1);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item) => (item as TextItem).str)
-          .join(' ');
-        
-        setPdfPageText(pageText);
+        // We'll now render the PDF directly instead of just extracting text
+        setPdfPageText("PDF loaded successfully");
       } catch (error) {
         console.error("Error loading PDF:", error);
         toast.error("Failed to load PDF. Please try again.");
@@ -567,7 +564,7 @@ const MyNotes = () => {
       </div>
 
       <Dialog open={viewOpen} onOpenChange={handleDialogClose}>
-        <DialogContent className="max-w-3xl h-[80vh] flex flex-col">
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -598,27 +595,35 @@ const MyNotes = () => {
                     ) : (
                       <>
                         <div className="bg-white p-4 rounded-md shadow mb-4 flex-1 overflow-auto">
-                          <p className="whitespace-pre-line">{pdfPageText}</p>
+                          <iframe 
+                            src={`${selectedFile.pdfUrl}#page=${pdfPageNum}`} 
+                            className="w-full h-full min-h-[500px] border-none"
+                            title={selectedFile.name}
+                          />
                         </div>
                         <div className="flex justify-between items-center mt-4">
                           <Button 
-                            onClick={() => handlePdfPageChange('prev')} 
+                            onClick={() => setPdfPageNum(prev => Math.max(1, prev - 1))} 
                             disabled={pdfPageNum <= 1}
                             variant="outline"
                             size="sm"
+                            className="flex items-center gap-1"
                           >
+                            <ChevronLeft className="h-4 w-4" />
                             Previous Page
                           </Button>
                           <span className="text-sm font-medium">
                             Page {pdfPageNum} of {pdfTotalPages}
                           </span>
                           <Button 
-                            onClick={() => handlePdfPageChange('next')} 
+                            onClick={() => setPdfPageNum(prev => Math.min(pdfTotalPages, prev + 1))} 
                             disabled={pdfPageNum >= pdfTotalPages}
                             variant="outline"
                             size="sm"
+                            className="flex items-center gap-1"
                           >
                             Next Page
+                            <ChevronRight className="h-4 w-4" />
                           </Button>
                         </div>
                       </>

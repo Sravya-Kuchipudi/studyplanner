@@ -35,7 +35,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.classList.remove("light", "dark", "color-blind");
     
     // Add the current theme class
-    document.documentElement.classList.add(theme);
+    if (theme === "colorBlind") {
+      document.documentElement.classList.add("color-blind");
+    } else {
+      document.documentElement.classList.add(theme);
+    }
   }, [theme]);
 
   return (

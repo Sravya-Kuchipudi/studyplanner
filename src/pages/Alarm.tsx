@@ -103,6 +103,11 @@ const Alarm = () => {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
+    
+    // Clear ringing alarm state
+    if (ringingAlarmId) {
+      setRingingAlarmId(null);
+    }
   };
 
   const handleAddAlarm = (newAlarm: Omit<Alarm, "id">) => {
@@ -161,15 +166,17 @@ const Alarm = () => {
           action: {
             label: "Stop",
             onClick: () => {
-              setRingingAlarmId(null);
-              if (withSound) {
-                stopAlarmSound();
-              }
+              stopAlarmSound();
             }
           }
         }
       );
     }
+  };
+  
+  const handleStopAlarm = () => {
+    stopAlarmSound();
+    toast.success("Alarm stopped");
   };
 
   return (
@@ -182,7 +189,7 @@ const Alarm = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <TestAlarmButton onTestAlarm={handleTestAlarm} />
+          <TestAlarmButton onTestAlarm={handleTestAlarm} onStopAlarm={handleStopAlarm} />
           <AlarmForm 
             onAddAlarm={handleAddAlarm} 
             isOpen={isDialogOpen} 

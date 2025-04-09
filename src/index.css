@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -84,45 +85,90 @@
   }
 
   .color-blind {
-    --background: 0 0% 98%;
-    --foreground: 0 0% 10%;
+    --background: 210 33% 98%;
+    --foreground: 210 50% 10%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 10%;
+    --card: 210 33% 100%;
+    --card-foreground: 210 50% 10%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 10%;
+    --popover: 210 33% 100%;
+    --popover-foreground: 210 50% 10%;
 
     --primary: 210 100% 40%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 45 100% 50%;
-    --secondary-foreground: 0 0% 10%;
+    --secondary-foreground: 210 50% 10%;
 
-    --muted: 0 0% 90%;
-    --muted-foreground: 0 0% 40%;
+    --muted: 210 33% 90%;
+    --muted-foreground: 210 33% 40%;
 
     --accent: 25 90% 50%;
-    --accent-foreground: 0 0% 10%;
+    --accent-foreground: 210 50% 10%;
 
-    --destructive: 0 100% 45%;
+    --destructive: 0 100% 35%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 85%;
-    --input: 0 0% 85%;
+    --border: 210 33% 85%;
+    --input: 210 33% 85%;
     --ring: 210 100% 40%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 94%;
-    --sidebar-foreground: 0 0% 10%;
+    --sidebar-background: 210 33% 94%;
+    --sidebar-foreground: 210 50% 10%;
     --sidebar-primary: 210 100% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 25 90% 85%;
     --sidebar-accent-foreground: 0 0% 10%;
-    --sidebar-border: 0 0% 80%;
+    --sidebar-border: 210 33% 80%;
     --sidebar-ring: 210 100% 40%;
   }
+
+  /* Special colorblind overrides for better accessibility */
+  .color-blind .studyhub-50 { color: hsl(210, 100%, 95%); }
+  .color-blind .studyhub-100 { color: hsl(210, 100%, 90%); }
+  .color-blind .studyhub-200 { color: hsl(210, 100%, 80%); }
+  .color-blind .studyhub-300 { color: hsl(210, 100%, 70%); }
+  .color-blind .studyhub-400 { color: hsl(210, 100%, 60%); }
+  .color-blind .studyhub-500 { color: hsl(210, 100%, 50%); }
+  .color-blind .studyhub-600 { color: hsl(210, 100%, 40%); }
+  .color-blind .studyhub-700 { color: hsl(210, 100%, 30%); }
+  .color-blind .studyhub-800 { color: hsl(210, 100%, 20%); }
+  .color-blind .studyhub-900 { color: hsl(210, 100%, 10%); }
+
+  .color-blind .bg-studyhub-50 { background-color: hsl(210, 100%, 95%); }
+  .color-blind .bg-studyhub-100 { background-color: hsl(210, 100%, 90%); }
+  .color-blind .bg-studyhub-200 { background-color: hsl(210, 100%, 80%); }
+  .color-blind .bg-studyhub-300 { background-color: hsl(210, 100%, 70%); }
+  .color-blind .bg-studyhub-400 { background-color: hsl(210, 100%, 60%); }
+  .color-blind .bg-studyhub-500 { background-color: hsl(210, 100%, 50%); }
+  .color-blind .bg-studyhub-600 { background-color: hsl(210, 100%, 40%); }
+  .color-blind .bg-studyhub-700 { background-color: hsl(210, 100%, 30%); }
+  .color-blind .bg-studyhub-800 { background-color: hsl(210, 100%, 20%); }
+  .color-blind .bg-studyhub-900 { background-color: hsl(210, 100%, 10%); }
+
+  .color-blind .text-studyhub-50 { color: hsl(210, 100%, 95%); }
+  .color-blind .text-studyhub-100 { color: hsl(210, 100%, 90%); }
+  .color-blind .text-studyhub-200 { color: hsl(210, 100%, 80%); }
+  .color-blind .text-studyhub-300 { color: hsl(210, 100%, 70%); }
+  .color-blind .text-studyhub-400 { color: hsl(210, 100%, 60%); }
+  .color-blind .text-studyhub-500 { color: hsl(210, 100%, 50%); }
+  .color-blind .text-studyhub-600 { color: hsl(210, 100%, 40%); }
+  .color-blind .text-studyhub-700 { color: hsl(210, 100%, 30%); }
+  .color-blind .text-studyhub-800 { color: hsl(210, 100%, 20%); }
+  .color-blind .text-studyhub-900 { color: hsl(210, 100%, 10%); }
+
+  .color-blind .border-studyhub-50 { border-color: hsl(210, 100%, 95%); }
+  .color-blind .border-studyhub-100 { border-color: hsl(210, 100%, 90%); }
+  .color-blind .border-studyhub-200 { border-color: hsl(210, 100%, 80%); }
+  .color-blind .border-studyhub-300 { border-color: hsl(210, 100%, 70%); }
+  .color-blind .border-studyhub-400 { border-color: hsl(210, 100%, 60%); }
+  .color-blind .border-studyhub-500 { border-color: hsl(210, 100%, 50%); }
+  .color-blind .border-studyhub-600 { border-color: hsl(210, 100%, 40%); }
+  .color-blind .border-studyhub-700 { border-color: hsl(210, 100%, 30%); }
+  .color-blind .border-studyhub-800 { border-color: hsl(210, 100%, 20%); }
+  .color-blind .border-studyhub-900 { border-color: hsl(210, 100%, 10%); }
 }
 
 @layer base {
@@ -160,5 +206,10 @@
   
   .studyhub-gradient {
     @apply bg-gradient-to-br from-studyhub-400 to-studyhub-600;
+  }
+
+  /* Special overrides for colorblind mode */
+  .color-blind .studyhub-gradient {
+    @apply bg-gradient-to-br from-blue-500 to-blue-700;
   }
 }

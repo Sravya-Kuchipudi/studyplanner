@@ -1,15 +1,15 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar as CalendarIcon, Upload, PlusCircle, Trash2, FileText } from "lucide-react";
+import { Calendar as CalendarIcon, Upload, PlusCircle, Trash2, FileText, Eye } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { extractScheduleFromPDF } from "@/utils/pdfProcessor";
 import { 
   Dialog,
   DialogContent,
@@ -25,15 +25,23 @@ interface ScheduleItem {
   description: string;
 }
 
+interface UploadedFile {
+  id: string;
+  name: string;
+  type: string;
+  size: string;
+  url: string;
+}
+
 const StudyPlanner = () => {
   const [date, setDate] = useState<Date>();
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [uploadedSchedules, setUploadedSchedules] = useState<string[]>([]);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [extractedItems, setExtractedItems] = useState<ScheduleItem[]>([]);
-  const [showExtractedDialog, setShowExtractedDialog] = useState(false);
+  const [viewingFile, setViewingFile] = useState<UploadedFile | null>(null);
+  const [showFileDialog, setShowFileDialog] = useState(false);
 
   const handleAddSchedule = () => {
     if (!date || !newTitle) {
@@ -63,66 +71,60 @@ const StudyPlanner = () => {
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    // Keep track of the file name
-    setUploadedSchedules([...uploadedSchedules, file.name]);
     
-    // Check if it's a PDF and process it
-    if (file.type === "application/pdf") {
-      setIsProcessing(true);
-      toast.info("Processing PDF schedule...");
+    setIsProcessing(true);
+    
+    try {
+      // Create file URL
+      const fileUrl = URL.createObjectURL(file);
       
-      try {
-        // Read the file as ArrayBuffer
-        const buffer = await file.arrayBuffer();
-        const items = await extractScheduleFromPDF(buffer);
-        
-        if (items.length > 0) {
-          // Convert to ScheduleItem format
-          const newItems: ScheduleItem[] = items
-            .filter(item => item.date !== null)
-            .map(item => ({
-              id: crypto.randomUUID(),
-              date: item.date as Date,
-              title: item.title,
-              description: item.description
-            }));
-          
-          if (newItems.length > 0) {
-            setExtractedItems(newItems);
-            setShowExtractedDialog(true);
-          } else {
-            toast.error("Couldn't extract any valid schedule items from the PDF");
-          }
-        } else {
-          toast.error("Couldn't extract schedule from the PDF");
-        }
-      } catch (error) {
-        console.error("Error processing PDF:", error);
-        toast.error("Error processing PDF");
-      } finally {
-        setIsProcessing(false);
-        e.target.value = "";
-      }
-    } else {
-      // Not a PDF, just acknowledge upload
+      // Add to uploaded files
+      const newFile: UploadedFile = {
+        id: crypto.randomUUID(),
+        name: file.name,
+        type: file.type,
+        size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+        url: fileUrl
+      };
+      
+      setUploadedFiles([...uploadedFiles, newFile]);
+      
       toast.success(`Uploaded: ${file.name}`);
+    } catch (error) {
+      console.error("Error processing file:", error);
+      toast.error("Error processing file");
+    } finally {
+      setIsProcessing(false);
       e.target.value = "";
     }
   };
 
-  const handleConfirmExtractedItems = () => {
-    setScheduleItems([...scheduleItems, ...extractedItems]);
-    setExtractedItems([]);
-    setShowExtractedDialog(false);
-    toast.success(`Added ${extractedItems.length} items to your schedule`);
+  const handleViewFile = (file: UploadedFile) => {
+    setViewingFile(file);
+    setShowFileDialog(true);
   };
 
-  const handleDeleteFile = (index: number) => {
-    const newFiles = [...uploadedSchedules];
-    newFiles.splice(index, 1);
-    setUploadedSchedules(newFiles);
+  const handleDeleteFile = (id: string) => {
+    const fileToDelete = uploadedFiles.find(file => file.id === id);
+    if (fileToDelete?.url) {
+      URL.revokeObjectURL(fileToDelete.url);
+    }
+    
+    setUploadedFiles(uploadedFiles.filter(file => file.id !== id));
     toast.success("File removed");
+  };
+
+  const getFileIcon = (fileType: string) => {
+    if (fileType.includes('pdf')) {
+      return <FileText className="h-4 w-4 text-red-500" />;
+    } else if (fileType.includes('word') || fileType.includes('doc')) {
+      return <FileText className="h-4 w-4 text-blue-500" />;
+    } else if (fileType.includes('sheet') || fileType.includes('excel') || fileType.includes('csv')) {
+      return <FileText className="h-4 w-4 text-green-500" />;
+    } else if (fileType.includes('image')) {
+      return <FileText className="h-4 w-4 text-purple-500" />;
+    }
+    return <FileText className="h-4 w-4 text-gray-500" />;
   };
 
   return (
@@ -140,13 +142,23 @@ const StudyPlanner = () => {
             id="schedule-upload"
             className="hidden"
             onChange={handleFileUpload}
-            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
+            accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.jpg,.jpeg,.png"
+            disabled={isProcessing}
           />
           <label htmlFor="schedule-upload">
-            <Button variant="outline" className="cursor-pointer" asChild>
+            <Button variant="outline" className="cursor-pointer" asChild disabled={isProcessing}>
               <div>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Schedule
+                {isProcessing ? (
+                  <>
+                    <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-t-primary border-l-primary border-r-primary"></span>
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload File
+                  </>
+                )}
               </div>
             </Button>
           </label>
@@ -214,31 +226,40 @@ const StudyPlanner = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Uploaded Schedules</CardTitle>
+            <CardTitle>Uploaded Files</CardTitle>
           </CardHeader>
           <CardContent>
-            {uploadedSchedules.length === 0 ? (
+            {uploadedFiles.length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
-                No schedules uploaded yet
+                No files uploaded yet
               </p>
             ) : (
               <div className="space-y-2">
-                {uploadedSchedules.map((filename, index) => (
+                {uploadedFiles.map((file) => (
                   <div
-                    key={index}
+                    key={file.id}
                     className="flex items-center justify-between p-3 bg-muted rounded-md"
                   >
                     <div className="font-medium truncate max-w-[180px] flex items-center">
-                      <FileText className="h-4 w-4 mr-2 text-muted-foreground" />
-                      {filename}
+                      {getFileIcon(file.type)}
+                      <span className="ml-2">{file.name}</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleDeleteFile(index)}
-                    >
-                      <Trash2 className="h-4 w-4 text-muted-foreground" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleViewFile(file)}
+                      >
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteFile(file.id)}
+                      >
+                        <Trash2 className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -288,35 +309,44 @@ const StudyPlanner = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={showExtractedDialog} onOpenChange={setShowExtractedDialog}>
-        <DialogContent>
+      <Dialog open={showFileDialog} onOpenChange={setShowFileDialog}>
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Schedule Items Found</DialogTitle>
+            <DialogTitle>
+              {viewingFile?.name}
+            </DialogTitle>
           </DialogHeader>
-          <div className="py-4">
-            <p className="mb-4 text-muted-foreground">
-              {extractedItems.length} schedule items were extracted from your PDF. Would you like to add them to your schedule?
-            </p>
-            <div className="max-h-[300px] overflow-y-auto border rounded-lg p-2">
-              {extractedItems.map((item, index) => (
-                <div key={index} className="p-3 border-b last:border-b-0">
-                  <div className="font-medium">{item.title}</div>
-                  <div className="text-sm text-muted-foreground">
-                    Date: {format(item.date, "MMM dd, yyyy")}
+          <div className="flex-1 overflow-auto p-6 bg-muted/30 rounded-md border">
+            {viewingFile && (
+              <div className="h-full flex items-center justify-center">
+                {viewingFile.type.includes('pdf') ? (
+                  <iframe 
+                    src={viewingFile.url} 
+                    className="w-full h-full min-h-[500px] border-none"
+                    title={viewingFile.name}
+                  />
+                ) : viewingFile.type.includes('image') ? (
+                  <img 
+                    src={viewingFile.url} 
+                    alt={viewingFile.name} 
+                    className="max-w-full max-h-full object-contain"
+                  />
+                ) : (
+                  <div className="text-center">
+                    <FileText className="h-16 w-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-medium mb-2">File Preview</h3>
+                    <p className="text-muted-foreground mb-4">Preview not available for this file type</p>
+                    <Button 
+                      onClick={() => window.open(viewingFile.url, '_blank')}
+                      className="bg-studyhub-600 hover:bg-studyhub-700"
+                    >
+                      Download to View
+                    </Button>
                   </div>
-                  <div className="text-sm">{item.description}</div>
-                </div>
-              ))}
-            </div>
+                )}
+              </div>
+            )}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowExtractedDialog(false)}>
-              Cancel
-            </Button>
-            <Button className="bg-studyhub-600 hover:bg-studyhub-700" onClick={handleConfirmExtractedItems}>
-              Add to Schedule
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

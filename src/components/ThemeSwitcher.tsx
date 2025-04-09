@@ -27,17 +27,17 @@ export function ThemeSwitcher() {
       <DropdownMenuContent align="end">
         <DropdownMenuLabel>Theme Options</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => setTheme("light")}>
+        <DropdownMenuItem onClick={() => setTheme("light")} className={theme === "light" ? "bg-accent" : ""}>
           <Sun className="mr-2 h-4 w-4" />
           <span>Light</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("dark")}>
+        <DropdownMenuItem onClick={() => setTheme("dark")} className={theme === "dark" ? "bg-accent" : ""}>
           <Moon className="mr-2 h-4 w-4" />
           <span>Dark</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme("colorBlind")}>
+        <DropdownMenuItem onClick={() => setTheme("colorBlind")} className={theme === "colorBlind" ? "bg-accent" : ""}>
           <Eye className="mr-2 h-4 w-4" />
-          <span>High Contrast (Colorblind)</span>
+          <span>High Contrast (Blue)</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

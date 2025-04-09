@@ -18,7 +18,7 @@ const CurrentTime = () => {
   }, []);
 
   return (
-    <Card>
+    <Card className="shadow-md border-studyhub-200 dark:border-studyhub-800">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-xl flex items-center gap-2">
           <Clock className="h-5 w-5 text-studyhub-500" />
@@ -27,10 +27,10 @@ const CurrentTime = () => {
       </CardHeader>
       <CardContent>
         <div className="text-center py-6">
-          <div className="text-4xl font-bold mb-1">
+          <div className="text-5xl font-bold mb-2 studyhub-gradient text-transparent bg-clip-text">
             {format(currentTime, "hh:mm:ss a")}
           </div>
-          <div className="text-muted-foreground">
+          <div className="text-muted-foreground text-lg">
             {format(currentTime, "EEEE, MMMM d, yyyy")}
           </div>
         </div>
