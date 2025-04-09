@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Bot, User, Clock } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 interface Message {
   id: string;
@@ -25,6 +26,7 @@ const Chat = () => {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const messageEndRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // Auto-scroll to the bottom of messages
   useEffect(() => {
@@ -46,45 +48,57 @@ const Chat = () => {
     setInput("");
     setIsLoading(true);
 
-    // Simulate API call to an AI service like OpenAI
-    setTimeout(() => {
-      // Mock response (In a real app, this would be a call to an AI API)
-      const botResponses: { [key: string]: string } = {
-        "help": "I can help you with studying by explaining concepts, creating flashcards, or providing practice questions. What subject are you studying?",
-        "math": "Mathematics is a vast field! Are you studying algebra, calculus, geometry, or something else?",
-        "physics": "Physics can be challenging! What specific topic in physics are you studying?",
-        "who are you": "I'm your AI study assistant in StudyHub. I'm here to help you with your studies, answer questions, and provide learning resources.",
-        "thanks": "You're welcome! Feel free to ask any other questions as you continue studying.",
-        "hello": "Hello there! How can I assist with your studies today?",
-        "hi": "Hi! Ready to help you with your academic questions."
-      };
+    try {
+      // Call the Supabase Edge Function for AI responses
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: input,
+          // Optional: You can send conversation history if needed
+          history: messages.map(msg => ({
+            role: msg.sender === 'user' ? 'user' : 'assistant',
+            content: msg.text
+          }))
+        })
+      });
 
-      let botReply = "";
+      if (!response.ok) {
+        throw new Error('Failed to get response from AI');
+      }
+
+      const data = await response.json();
       
-      // Check if the user's message includes any keywords
-      const userMessageLower = input.toLowerCase();
-      for (const [keyword, response] of Object.entries(botResponses)) {
-        if (userMessageLower.includes(keyword)) {
-          botReply = response;
-          break;
-        }
-      }
-
-      // Default response if no keywords matched
-      if (!botReply) {
-        botReply = "I'm here to help with your studies. Could you provide more details about what you're working on?";
-      }
-
       const botMessage: Message = {
         id: crypto.randomUUID(),
-        text: botReply,
+        text: data.message || "I'm having trouble processing your request right now.",
         sender: "bot",
         timestamp: new Date()
       };
 
       setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error('Error calling AI service:', error);
+      toast({
+        title: "Error",
+        description: "Failed to connect to the AI service. Please try again later.",
+        variant: "destructive"
+      });
+      
+      // Fallback response
+      const errorMessage: Message = {
+        id: crypto.randomUUID(),
+        text: "Sorry, I'm having trouble connecting right now. Please try again later.",
+        sender: "bot",
+        timestamp: new Date()
+      };
+      
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const formatTime = (date: Date) => {

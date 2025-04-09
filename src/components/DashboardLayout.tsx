@@ -4,11 +4,30 @@ import { Outlet, useNavigate } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { useAuth } from "@/context/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useToast } from "@/hooks/use-toast";
 
 const DashboardLayout = () => {
   const { isLoggedIn } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+
+  // Handle API errors globally
+  useEffect(() => {
+    const handleAPIError = (event: ErrorEvent) => {
+      if (event.message.includes('API') || event.message.includes('fetch')) {
+        console.error('API Error:', event.error);
+        toast({
+          title: "Connection Error",
+          description: "There was a problem connecting to the service. Please try again later.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    window.addEventListener('error', handleAPIError);
+    return () => window.removeEventListener('error', handleAPIError);
+  }, [toast]);
 
   useEffect(() => {
     if (!isLoggedIn) {
