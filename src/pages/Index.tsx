@@ -7,17 +7,24 @@ import {
   PieChart, 
   FileText, 
   MessageSquare, 
-  AlarmClock
+  AlarmClock,
+  LayoutDashboard
 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Index = () => {
   const features = [
     {
+      icon: <LayoutDashboard className="h-6 w-6 text-studyhub-600" />,
+      title: "Dashboard",
+      description: "View your personalized study dashboard with progress and goals",
+      path: "/dashboard"
+    },
+    {
       icon: <Clock className="h-6 w-6 text-studyhub-600" />,
       title: "Study Planner",
       description: "Organize your study sessions and manage your time effectively",
-      path: "/dashboard"
+      path: "/planner"
     },
     {
       icon: <PieChart className="h-6 w-6 text-studyhub-600" />,
@@ -40,7 +47,7 @@ const Index = () => {
     {
       icon: <MessageSquare className="h-6 w-6 text-studyhub-600" />,
       title: "Study Chat",
-      description: "Chat with other students or tutors for help",
+      description: "Chat with AI assistant for help with your studies",
       path: "/chat"
     }
   ];

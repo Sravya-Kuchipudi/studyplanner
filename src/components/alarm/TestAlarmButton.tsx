@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger
 } from "@/components/ui/dropdown-menu";
 import { Volume2, VolumeX, Power } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface TestAlarmButtonProps {
   onTestAlarm: (withSound: boolean) => void;
@@ -14,10 +15,15 @@ interface TestAlarmButtonProps {
 }
 
 const TestAlarmButton = ({ onTestAlarm, onStopAlarm }: TestAlarmButtonProps) => {
+  const isMobile = useIsMobile();
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="hidden sm:flex">
+        <Button 
+          variant="outline" 
+          className={`${isMobile ? 'w-full' : ''}`}
+        >
           Test Alarm
         </Button>
       </DropdownMenuTrigger>
