@@ -113,7 +113,7 @@ const Index = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-16 w-full max-w-6xl">
             {features.map((feature, index) => (
               <Link 
-                to={isLoggedIn ? feature.path : "/login"} 
+                to="/login" 
                 key={index} 
                 className="block hover:no-underline group"
               >
@@ -133,10 +133,9 @@ const Index = () => {
                     <Button 
                       variant="link" 
                       className="mt-4 text-studyhub-600 group-hover:underline" 
-                      asChild
                     >
                       <span>
-                        Go to {feature.title}
+                        Login to access
                         <ArrowRight className="ml-1 h-4 w-4 inline transition-transform group-hover:translate-x-1" />
                       </span>
                     </Button>

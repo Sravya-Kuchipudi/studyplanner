@@ -46,8 +46,11 @@ const App = () => {
               <OfflineIndicator />
               <Routes>
                 {/* Public routes */}
-                <Route path="/" element={<Index />} />
+                <Route path="/welcome" element={<Index />} />
                 <Route path="/login" element={<Login />} />
+                
+                {/* Redirect root to login */}
+                <Route path="/" element={<Navigate to="/login" replace />} />
                 
                 {/* Protected routes - all under the DashboardLayout */}
                 <Route 
