@@ -45,11 +45,12 @@ const App = () => {
               </div>
               <OfflineIndicator />
               <Routes>
+                {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 
+                {/* Protected routes - all under the DashboardLayout */}
                 <Route 
-                  path="/" 
                   element={
                     <ProtectedRoute>
                       <DashboardLayout />
@@ -64,7 +65,9 @@ const App = () => {
                   <Route path="/chat" element={<Chat />} />
                 </Route>
                 
-                <Route path="*" element={<NotFound />} />
+                {/* Catch unknown routes and redirect to 404 */}
+                <Route path="/404" element={<NotFound />} />
+                <Route path="*" element={<Navigate to="/404" replace />} />
               </Routes>
             </AuthProvider>
           </BrowserRouter>
