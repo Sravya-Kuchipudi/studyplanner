@@ -18,6 +18,7 @@ import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import ThemeSwitcherButton from "./components/ThemeSwitcherButton";
+import OfflineIndicator from "./components/common/OfflineIndicator";
 
 // Create a new QueryClient instance outside the component
 // This ensures it's not recreated on every render
@@ -40,6 +41,7 @@ const App = () => {
           <BrowserRouter>
             <AuthProvider>
               <ThemeSwitcherButton />
+              <OfflineIndicator />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
