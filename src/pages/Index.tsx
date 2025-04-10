@@ -9,10 +9,12 @@ import {
   MessageSquare, 
   AlarmClock,
   LayoutDashboard,
-  LogIn
+  LogIn,
+  ArrowRight
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import WelcomeBanner from "@/components/common/WelcomeBanner";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -66,60 +68,93 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-background">
-      <div className="max-w-5xl w-full px-4 py-12 text-center">
-        <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-studyhub-500 to-studyhub-700">
-          Welcome to StudyHub
-        </h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
-          Your all-in-one platform for effective studying, progress tracking, and note organization
-        </p>
-        
-        <div className="flex flex-wrap justify-center gap-4 mb-12">
-          <Button 
-            className="bg-studyhub-600 hover:bg-studyhub-700" 
-            size="lg" 
-            onClick={handleGetStarted}
-          >
-            Get Started
-          </Button>
+    <div className="min-h-screen w-full flex flex-col bg-gradient-to-b from-background to-studyhub-50 dark:from-background dark:to-background/90">
+      <main className="flex-1 flex flex-col">
+        <div className="container px-4 py-8 md:py-12 lg:py-16 flex flex-col items-center">
+          <WelcomeBanner 
+            title="Welcome to StudyHub!" 
+            message="Your all-in-one platform for effective studying, progress tracking, and note organization."
+          />
           
-          <Button 
-            variant="outline" 
-            size="lg" 
-            className="border-studyhub-600 text-studyhub-600 hover:bg-studyhub-50" 
-            asChild
-          >
-            <Link to="/login">
-              <LogIn className="mr-2 h-5 w-5" />
-              Log In
-            </Link>
-          </Button>
+          <div className="max-w-[85rem] w-full text-center space-y-8 md:space-y-12">
+            <div className="space-y-4">
+              <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-studyhub-600 to-studyhub-800 mx-auto">
+                Master Your Study Journey
+              </h1>
+              <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+                Your all-in-one platform for effective studying, progress tracking, and note organization
+              </p>
+            </div>
+            
+            <div className="flex flex-wrap justify-center gap-4 mx-auto">
+              <Button 
+                className="bg-studyhub-600 hover:bg-studyhub-700 transition-all shadow-lg hover:shadow-xl shadow-studyhub-600/20" 
+                size="lg" 
+                onClick={handleGetStarted}
+              >
+                Get Started
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="border-studyhub-400 text-studyhub-700 hover:bg-studyhub-100 transition-all" 
+                asChild
+              >
+                <Link to="/login">
+                  <LogIn className="mr-2 h-5 w-5" />
+                  Log In
+                </Link>
+              </Button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-16 w-full max-w-6xl">
+            {features.map((feature, index) => (
+              <Link 
+                to={isLoggedIn ? feature.path : "/login"} 
+                key={index} 
+                className="block hover:no-underline group"
+              >
+                <Card className="h-full transition-all duration-200 hover:border-studyhub-400 hover:shadow-lg hover:shadow-studyhub-100/30 dark:hover:shadow-studyhub-900/20">
+                  <CardHeader className="space-y-1">
+                    <div className="flex justify-center mb-2 transition-transform duration-300 group-hover:scale-110">
+                      <div className="p-3 rounded-full bg-studyhub-100 dark:bg-studyhub-900/30 text-studyhub-600">
+                        {feature.icon}
+                      </div>
+                    </div>
+                    <CardTitle className="text-center">{feature.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <CardDescription className="text-base">
+                      {feature.description}
+                    </CardDescription>
+                    <Button 
+                      variant="link" 
+                      className="mt-4 text-studyhub-600 group-hover:underline" 
+                      asChild
+                    >
+                      <span>
+                        Go to {feature.title}
+                        <ArrowRight className="ml-1 h-4 w-4 inline transition-transform group-hover:translate-x-1" />
+                      </span>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-          {features.map((feature, index) => (
-            <Link to={feature.path} key={index} className="block hover:no-underline">
-              <Card className="h-full transition-all duration-200 hover:border-studyhub-400 hover:shadow-md">
-                <CardHeader className="space-y-1">
-                  <div className="flex justify-center mb-2">
-                    {feature.icon}
-                  </div>
-                  <CardTitle className="text-center">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <CardDescription className="text-base">
-                    {feature.description}
-                  </CardDescription>
-                  <Button variant="link" className="mt-4 text-studyhub-600" asChild>
-                    <span>Go to {feature.title} →</span>
-                  </Button>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+      </main>
+
+      <footer className="w-full py-6 bg-gradient-to-b from-transparent to-studyhub-100/50 dark:to-background">
+        <div className="container text-center">
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} StudyHub. All rights reserved.
+          </p>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

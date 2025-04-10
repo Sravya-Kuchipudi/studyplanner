@@ -40,7 +40,9 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
-              <ThemeSwitcherButton />
+              <div className="fixed top-4 right-4 z-50">
+                <ThemeSwitcherButton />
+              </div>
               <OfflineIndicator />
               <Routes>
                 <Route path="/" element={<Index />} />

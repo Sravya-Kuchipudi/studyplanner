@@ -5,10 +5,15 @@ import GoalSetting from "@/components/dashboard/GoalSetting";
 import MotivationTracker from "@/components/dashboard/MotivationTracker";
 import StudyReminders from "@/components/dashboard/StudyReminders";
 import { useIsMobile } from "@/hooks/use-mobile";
+import PageContainer from "@/components/layout/PageContainer";
+import BackToHome from "@/components/navigation/BackToHome";
+import WelcomeBanner from "@/components/common/WelcomeBanner";
+import { Loader } from "lucide-react";
 
 const Dashboard = () => {
   const isMobile = useIsMobile();
   const [isLoading, setIsLoading] = useState(true);
+  const [showWelcome, setShowWelcome] = useState(false);
   
   // Sample data for the dashboard
   const subjectsData = [
@@ -35,6 +40,13 @@ const Dashboard = () => {
   const [motivationMessage, setMotivationMessage] = useState("");
   
   useEffect(() => {
+    // Check if first visit to dashboard
+    const hasVisitedDashboard = localStorage.getItem("dashboard-visited");
+    if (!hasVisitedDashboard) {
+      setShowWelcome(true);
+      localStorage.setItem("dashboard-visited", "true");
+    }
+    
     // Simulate data loading
     const timer = setTimeout(() => {
       const randomIndex = Math.floor(Math.random() * motivationMessages.length);
@@ -48,18 +60,28 @@ const Dashboard = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-[calc(100vh-120px)]">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-studyhub-600"></div>
+        <div className="flex flex-col items-center gap-4">
+          <Loader className="h-8 w-8 animate-spin text-studyhub-600" aria-label="Loading dashboard" />
+          <p className="text-muted-foreground">Loading your dashboard...</p>
+        </div>
       </div>
     );
   }
   
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Your Dashboard</h1>
-        <p className="text-muted-foreground">
-          Track your progress, set goals, and stay motivated
-        </p>
+    <PageContainer
+      heading="Your Dashboard"
+      subheading="Track your progress, set goals, and stay motivated"
+    >
+      {showWelcome && (
+        <WelcomeBanner 
+          title="Welcome to your Dashboard!" 
+          message="This is your study command center. Track progress, set goals, and stay on top of your study schedule." 
+        />
+      )}
+      
+      <div className="flex justify-between items-center mb-2">
+        <BackToHome className="mb-4" />
       </div>
       
       {/* Progress overview section */}
@@ -80,7 +102,7 @@ const Dashboard = () => {
           motivationMessage={motivationMessage}
         />
       </div>
-    </div>
+    </PageContainer>
   );
 };
 
