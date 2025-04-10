@@ -8,11 +8,16 @@ import {
   FileText, 
   MessageSquare, 
   AlarmClock,
-  LayoutDashboard
+  LayoutDashboard,
+  LogIn
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
 
 const Index = () => {
+  const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
+  
   const features = [
     {
       icon: <LayoutDashboard className="h-6 w-6 text-studyhub-600" />,
@@ -52,6 +57,14 @@ const Index = () => {
     }
   ];
 
+  const handleGetStarted = () => {
+    if (isLoggedIn) {
+      navigate("/dashboard");
+    } else {
+      navigate("/login");
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background">
       <div className="max-w-5xl w-full px-4 py-12 text-center">
@@ -61,6 +74,28 @@ const Index = () => {
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-12">
           Your all-in-one platform for effective studying, progress tracking, and note organization
         </p>
+        
+        <div className="flex flex-wrap justify-center gap-4 mb-12">
+          <Button 
+            className="bg-studyhub-600 hover:bg-studyhub-700" 
+            size="lg" 
+            onClick={handleGetStarted}
+          >
+            Get Started
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="border-studyhub-600 text-studyhub-600 hover:bg-studyhub-50" 
+            asChild
+          >
+            <Link to="/login">
+              <LogIn className="mr-2 h-5 w-5" />
+              Log In
+            </Link>
+          </Button>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
           {features.map((feature, index) => (
@@ -83,12 +118,6 @@ const Index = () => {
               </Card>
             </Link>
           ))}
-        </div>
-
-        <div className="mt-16">
-          <Button className="bg-studyhub-600 hover:bg-studyhub-700" size="lg" asChild>
-            <Link to="/dashboard">Get Started</Link>
-          </Button>
         </div>
       </div>
     </div>

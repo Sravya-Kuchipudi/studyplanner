@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import DashboardLayout from "./components/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
+import ThemeSwitcherButton from "./components/ThemeSwitcherButton";
 
 // Create a new QueryClient instance outside the component
 // This ensures it's not recreated on every render
@@ -38,6 +39,7 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
+              <ThemeSwitcherButton />
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
