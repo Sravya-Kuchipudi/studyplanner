@@ -41,7 +41,7 @@ const Login = () => {
         login(username);
         
         toast.success("Login successful!");
-        navigate("/planner"); // Changed from /dashboard to /planner
+        navigate("/planner");
       } else {
         toast.error("Invalid username or password");
       }

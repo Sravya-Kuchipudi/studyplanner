@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import Login from "./pages/Login";
-import StudyPlanner from "./pages/StudyPlanner";
 import Dashboard from "./pages/Dashboard";
 import ProgressTracker from "./pages/Progress";
 import MyNotes from "./pages/MyNotes";
@@ -41,12 +40,9 @@ const App = () => {
           <Sonner />
           <BrowserRouter>
             <AuthProvider>
-              <div className="fixed top-4 right-4 z-50">
-                <ThemeSwitcherButton />
-              </div>
               <OfflineIndicator />
               <Routes>
-                <Route path="/" element={<Login />} />
+                <Route path="/" element={<Index />} />
                 <Route path="/login" element={<Login />} />
                 
                 <Route 
@@ -59,7 +55,6 @@ const App = () => {
                 >
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/planner" element={<Planner />} />
-                  <Route path="/study-planner" element={<StudyPlanner />} />
                   <Route path="/progress" element={<ProgressTracker />} />
                   <Route path="/notes" element={<MyNotes />} />
                   <Route path="/alarm" element={<Alarm />} />

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -124,7 +125,7 @@ export const AppSidebar = () => {
           <SidebarLink 
             to="/dashboard" 
             icon={<Calendar size={collapsed ? 24 : 20} />} 
-            label="Study Planner" 
+            label="Dashboard" 
             collapsed={collapsed} 
           />
           <SidebarLink 
