@@ -45,7 +45,7 @@ const App = () => {
               </div>
               <OfflineIndicator />
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<Login />} />
                 <Route path="/login" element={<Login />} />
                 
                 <Route 
