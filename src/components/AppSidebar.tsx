@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -17,7 +16,8 @@ import {
   User,
   Sun,
   Moon,
-  Eye
+  Eye,
+  Notebook
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -116,6 +116,12 @@ export const AppSidebar = () => {
       <div className="flex-1 overflow-auto p-2">
         <nav className="space-y-1">
           <SidebarLink 
+            to="/planner" 
+            icon={<Notebook size={collapsed ? 24 : 20} />} 
+            label="Planner" 
+            collapsed={collapsed} 
+          />
+          <SidebarLink 
             to="/dashboard" 
             icon={<Calendar size={collapsed ? 24 : 20} />} 
             label="Study Planner" 
@@ -149,7 +155,6 @@ export const AppSidebar = () => {
       </div>
 
       <div className="p-2 space-y-2">
-        {/* Theme Switcher */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -183,7 +188,6 @@ export const AppSidebar = () => {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Logout Button */}
         <Button 
           variant="ghost" 
           className={cn(
