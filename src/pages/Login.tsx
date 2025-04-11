@@ -1,6 +1,6 @@
 
-import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,18 +24,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const { login, isLoggedIn } = useAuth();
-
-  // Get the page the user was trying to access before being redirected to login
-  const from = location.state?.from || "/dashboard";
-
-  // If user is already logged in, redirect to dashboard
-  useEffect(() => {
-    if (isLoggedIn) {
-      navigate(from, { replace: true });
-    }
-  }, [isLoggedIn, navigate, from]);
+  const { login } = useAuth();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,7 +41,7 @@ const Login = () => {
         login(username);
         
         toast.success("Login successful!");
-        navigate(from, { replace: true });
+        navigate("/dashboard");
       } else {
         toast.error("Invalid username or password");
       }
