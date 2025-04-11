@@ -19,6 +19,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import ThemeSwitcherButton from "./components/ThemeSwitcherButton";
 import OfflineIndicator from "./components/common/OfflineIndicator";
+import Planner from "./pages/Planner";
 
 // Create a new QueryClient instance outside the component
 // This ensures it's not recreated on every render
@@ -57,7 +58,8 @@ const App = () => {
                   }
                 >
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/planner" element={<StudyPlanner />} />
+                  <Route path="/planner" element={<Planner />} />
+                  <Route path="/study-planner" element={<StudyPlanner />} />
                   <Route path="/progress" element={<ProgressTracker />} />
                   <Route path="/notes" element={<MyNotes />} />
                   <Route path="/alarm" element={<Alarm />} />
