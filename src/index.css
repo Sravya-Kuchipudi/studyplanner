@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -190,50 +191,59 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted rounded-full;
+  background-color: hsl(var(--muted));
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-muted-foreground/50;
+  background-color: rgba(var(--muted-foreground), 0.5);
 }
 
-@layer components {
-  .hover-scale {
-    @apply transition-transform duration-200 hover:scale-105;
-  }
-  
-  .studyhub-gradient {
-    @apply bg-gradient-to-br from-studyhub-400 to-studyhub-600;
-  }
-
-  .interactive-card {
-    @apply transition-all duration-300 hover:shadow-md;
-  }
-
-  .fade-in {
-    @apply animate-in fade-in duration-300;
-  }
-
-  .slide-in-from-bottom {
-    @apply animate-in slide-in-from-bottom duration-300;
-  }
-  
-  .pulse-ring {
-    @apply animate-pulse-ring;
-  }
+/* Fix circular references by removing nested @apply directives */
+.hover-scale {
+  transition-property: transform;
+  transition-duration: 200ms;
+}
+.hover-scale:hover {
+  transform: scale(1.05);
 }
 
-@keyframes fade-in {
+.studyhub-gradient {
+  background-image: linear-gradient(to bottom right, hsl(var(--primary)), hsl(var(--primary)/0.8));
+}
+
+.interactive-card {
+  transition-property: all;
+  transition-duration: 300ms;
+}
+.interactive-card:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Use direct keyframe animation references instead of @apply */
+.fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+.slide-in-from-bottom {
+  animation: slideInFromBottom 0.3s ease forwards;
+}
+
+.pulse-ring {
+  animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes slide-in-from-bottom {
+@keyframes slideInFromBottom {
   from { transform: translateY(20px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
 
-@keyframes pulse-ring {
+@keyframes pulseRing {
   0% { transform: scale(0.8); opacity: 0.8; }
   50% { transform: scale(1); opacity: 0.4; }
   100% { transform: scale(0.8); opacity: 0.8; }
