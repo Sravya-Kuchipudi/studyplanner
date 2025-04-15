@@ -112,32 +112,26 @@ const ProgressTracker = () => {
 
   useEffect(() => {
     const savedSubjects = localStorage.getItem('studySubjects');
-    const savedTimeData = localStorage.getItem('studyTimeSpent');
     
     if (savedSubjects) {
-      const parsedSubjects = JSON.parse(savedSubjects);
-      
-      if (savedTimeData) {
-        const timeData = JSON.parse(savedTimeData);
-        parsedSubjects.forEach((subject: Subject) => {
-          subject.timeSpent = timeData[subject.name] || 0;
-        });
-      }
-      
-      setSubjects(parsedSubjects);
+      setSubjects(JSON.parse(savedSubjects));
     } else {
       setSubjects(initialSubjects);
     }
   }, []);
 
   useEffect(() => {
-    const timeSpentData = JSON.parse(localStorage.getItem('studyTimeSpent') || '{}');
-    const updatedSubjects = subjects.map(subject => ({
-      ...subject,
-      timeSpent: timeSpentData[subject.name] || 0
-    }));
-    setSubjects(updatedSubjects);
-  }, []);
+    if (subjects.length > 0) {
+      const timeSpentData = JSON.parse(localStorage.getItem('studyTimeSpent') || '{}');
+      
+      const updatedSubjects = subjects.map(subject => ({
+        ...subject,
+        timeSpent: timeSpentData[subject.name] || 0
+      }));
+      
+      setSubjects(updatedSubjects);
+    }
+  }, [subjects.length]);
 
   useEffect(() => {
     if (subjects.length > 0) {
@@ -147,7 +141,7 @@ const ProgressTracker = () => {
 
   const totalLessons = subjects.reduce((acc, subject) => acc + subject.lessons, 0);
   const completedLessons = subjects.reduce((acc, subject) => acc + subject.completed, 0);
-  const completionPercentage = Math.round((completedLessons / totalLessons) * 100);
+  const completionPercentage = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
   const totalTimeSpent = subjects.reduce((acc, subject) => acc + (subject.timeSpent || 0), 0);
 
   const pieData = subjects.map(subject => ({
@@ -199,7 +193,8 @@ const ProgressTracker = () => {
       ...subjects,
       {
         ...newSubject,
-        color: getRandomColor()
+        color: getRandomColor(),
+        timeSpent: 0
       }
     ];
 
@@ -232,7 +227,7 @@ const ProgressTracker = () => {
     }
 
     const updatedSubjects = subjects.map(subject => 
-      subject.name === editingSubject.name ? editingSubject : subject
+      subject.name === editingSubject?.name ? {...editingSubject, timeSpent: subject.timeSpent || 0} : subject
     );
 
     setSubjects(updatedSubjects);
@@ -408,24 +403,26 @@ const ProgressTracker = () => {
               <TabsContent value="overview" className="h-full mt-0">
                 {subjects.length > 0 ? (
                   <ChartContainer className="h-full" config={chartConfig}>
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={120}
-                        innerRadius={60}
-                        labelLine={true}
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        dataKey="value"
-                      >
-                        {pieData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <ChartLegend content={<ChartLegendContent />} />
-                    </PieChart>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={120}
+                          innerRadius={60}
+                          labelLine={true}
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          dataKey="value"
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Legend content={<ChartLegendContent />} />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </ChartContainer>
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -436,33 +433,33 @@ const ProgressTracker = () => {
               <TabsContent value="detailed" className="h-full mt-0">
                 {subjects.length > 0 ? (
                   <ChartContainer className="h-full" config={chartConfig}>
-                    <BarChart
-                      data={barData}
-                      margin={{
-                        top: 20,
-                        right: 30,
-                        left: 20,
-                        bottom: 5,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis label={{ value: 'Lessons', angle: -90, position: 'insideLeft' }} />
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <ChartLegend content={<ChartLegendContent />} />
-                      <Bar 
-                        dataKey="completed" 
-                        stackId="a" 
-                        name="Completed" 
-                        fill="#4CAF50"
-                      />
-                      <Bar 
-                        dataKey="remaining" 
-                        stackId="a" 
-                        name="Remaining" 
-                        fill="#FFA726"
-                      />
-                    </BarChart>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={barData}
+                        margin={{
+                          top: 20,
+                          right: 30,
+                          left: 20,
+                          bottom: 5,
+                        }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="name" />
+                        <YAxis label={{ value: 'Lessons', angle: -90, position: 'insideLeft' }} />
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Legend content={<ChartLegendContent />} />
+                        <Bar 
+                          dataKey="completed" 
+                          name="Completed" 
+                          fill="#4CAF50"
+                        />
+                        <Bar 
+                          dataKey="remaining" 
+                          name="Remaining" 
+                          fill="#FFA726"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </ChartContainer>
                 ) : (
                   <div className="flex items-center justify-center h-full">
@@ -473,24 +470,26 @@ const ProgressTracker = () => {
               <TabsContent value="time" className="h-full mt-0">
                 {subjects.length > 0 && subjects.some(s => (s.timeSpent || 0) > 0) ? (
                   <ChartContainer className="h-full" config={chartConfig}>
-                    <PieChart>
-                      <Pie
-                        data={timeData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={120}
-                        innerRadius={60}
-                        labelLine={true}
-                        label={({ name, value }) => `${name}: ${formatTime(value as number)}`}
-                        dataKey="value"
-                      >
-                        {timeData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ChartTooltip content={<ChartTooltipContent />} />
-                      <ChartLegend content={<ChartLegendContent />} />
-                    </PieChart>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={timeData.filter(item => item.value > 0)}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={120}
+                          innerRadius={60}
+                          labelLine={true}
+                          label={({ name, value }) => `${name}: ${formatTime(value as number)}`}
+                          dataKey="value"
+                        >
+                          {timeData.filter(item => item.value > 0).map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Legend content={<ChartLegendContent />} />
+                      </PieChart>
+                    </ResponsiveContainer>
                   </ChartContainer>
                 ) : (
                   <div className="flex items-center justify-center h-full">
