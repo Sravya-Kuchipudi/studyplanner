@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +28,8 @@ import {
 import { cn } from "@/lib/utils";
 import * as pdfjs from 'pdfjs-dist';
 import { TextItem } from 'pdfjs-dist/types/src/display/api';
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 // Set the PDF.js worker source with the exact version
 const pdfWorkerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -240,83 +241,142 @@ const MyNotes = () => {
       }));
     }
   }, [viewOpen]);
+  const { user } = useAuth();
+
+  // Load files from Supabase on mount
+  useEffect(() => {
+    if (user) {
+      loadUserFiles();
+    }
+  }, [user]);
+
+  const loadUserFiles = async () => {
+    try {
+      const { data: files, error } = await supabase
+        .from('study_files')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (files) {
+        const loadedFiles = await Promise.all(files.map(async (file) => {
+          const { data: signedUrl } = await supabase
+            .storage
+            .from('study-files')
+            .createSignedUrl(`${user?.id}/${file.storage_path}`, 3600);
+
+          return {
+            id: file.id,
+            name: file.name,
+            type: file.file_type,
+            size: file.size,
+            pdfUrl: signedUrl?.signedUrl,
+            subject: file.subject
+          };
+        }));
+
+        setFiles(loadedFiles);
+      }
+    } catch (error) {
+      console.error("Error loading files:", error);
+      toast.error("Failed to load your files");
+    }
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
-    if (fileList && fileList.length > 0) {
-      setIsUploadingFile(true);
-      const newFiles: NoteFile[] = [];
-      
-      try {
-        for (const file of Array.from(fileList)) {
-          const fileId = crypto.randomUUID();
-          const fileType = file.name.split('.').pop()?.toLowerCase() || "unknown";
-          const subject = getSubjectFromFilename(file.name);
-          
-          // Create a URL for the file
-          const fileUrl = URL.createObjectURL(file);
-          
-          const newFile: NoteFile = {
-            id: fileId,
-            name: file.name,
-            type: fileType,
-            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-            lastModified: new Date(file.lastModified).toLocaleDateString(),
-            subject: subject
-          };
-          
-          // Handle different file types
-          if (fileType === 'pdf') {
-            newFile.pdfUrl = fileUrl;
-            try {
-              // Extract text from PDF for preview
-              console.log("Processing PDF file:", file.name);
-              const extractedText = await extractTextFromPdf(fileUrl);
-              newFile.text = extractedText;
-            } catch (pdfError) {
-              console.error("Error processing PDF:", pdfError);
-              newFile.text = "Could not extract text from this PDF.";
-            }
-          } else if (['txt', 'md', 'csv'].includes(fileType)) {
-            // Read text files directly
-            const textContent = await readTextFile(file);
-            newFile.content = textContent;
-            newFile.text = textContent.substring(0, 500) + (textContent.length > 500 ? '...' : '');
-          } else if (['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx'].includes(fileType)) {
-            // For Office documents, just store the URL and a placeholder
-            newFile.pdfUrl = fileUrl;
-            newFile.content = `Content for ${fileType.toUpperCase()} file. Upload a PDF for better preview.`;
-          } else {
-            // For other files, just store a placeholder
-            newFile.content = `Content for uploaded file. File type: ${fileType.toUpperCase()}`;
-          }
-          
-          newFiles.push(newFile);
-        }
+    if (!fileList || !user) return;
+    
+    setIsUploadingFile(true);
+    
+    try {
+      for (const file of Array.from(fileList)) {
+        const fileId = crypto.randomUUID();
+        const fileType = file.name.split('.').pop()?.toLowerCase() || "unknown";
+        const subject = getSubjectFromFilename(file.name);
+        const storagePath = `${file.name}-${fileId}`;
         
-        setFiles([...files, ...newFiles]);
-        toast.success(`Uploaded ${newFiles.length} file(s) successfully`);
-      } catch (error) {
-        console.error("Error processing uploaded files:", error);
-        toast.error("Error processing some files. Please try again.");
-      } finally {
-        setIsUploadingFile(false);
-        if (e.target) {
-          e.target.value = "";
-        }
+        // Upload file to Supabase Storage
+        const { error: uploadError } = await supabase.storage
+          .from('study-files')
+          .upload(`${user.id}/${storagePath}`, file);
+
+        if (uploadError) throw uploadError;
+
+        // Create signed URL for the uploaded file
+        const { data: signedUrl } = await supabase.storage
+          .from('study-files')
+          .createSignedUrl(`${user.id}/${storagePath}`, 3600);
+
+        // Save file metadata to database
+        const { error: dbError } = await supabase
+          .from('study_files')
+          .insert({
+            id: fileId,
+            user_id: user.id,
+            name: file.name,
+            file_type: fileType,
+            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+            storage_path: storagePath,
+            subject: subject
+          });
+
+        if (dbError) throw dbError;
+
+        const newFile = {
+          id: fileId,
+          name: file.name,
+          type: fileType,
+          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+          pdfUrl: signedUrl?.signedUrl,
+          subject: subject
+        };
+
+        setFiles(prev => [...prev, newFile]);
+      }
+      
+      toast.success(`Uploaded file(s) successfully`);
+    } catch (error) {
+      console.error("Error processing files:", error);
+      toast.error("Error uploading file(s). Please try again.");
+    } finally {
+      setIsUploadingFile(false);
+      if (e.target) {
+        e.target.value = "";
       }
     }
   };
 
-  const handleDeleteFile = (id: string) => {
-    // Revoke object URL if it exists
-    const fileToDelete = files.find(file => file.id === id);
-    if (fileToDelete?.pdfUrl) {
-      URL.revokeObjectURL(fileToDelete.pdfUrl);
+  const handleDeleteFile = async (id: string) => {
+    if (!user) return;
+
+    try {
+      const fileToDelete = files.find(file => file.id === id);
+      if (!fileToDelete) return;
+
+      // Delete from Supabase Storage
+      const { error: storageError } = await supabase.storage
+        .from('study-files')
+        .remove([`${user.id}/${fileToDelete.name}-${fileToDelete.id}`]);
+
+      if (storageError) throw storageError;
+
+      // Delete from database
+      const { error: dbError } = await supabase
+        .from('study_files')
+        .delete()
+        .eq('id', id);
+
+      if (dbError) throw dbError;
+
+      // Update local state
+      setFiles(files.filter(file => file.id !== id));
+      toast.success("File deleted successfully");
+    } catch (error) {
+      console.error("Error deleting file:", error);
+      toast.error("Failed to delete file");
     }
-    
-    setFiles(files.filter(file => file.id !== id));
-    toast.success("File deleted successfully");
   };
 
   const handleViewFile = async (file: NoteFile) => {
