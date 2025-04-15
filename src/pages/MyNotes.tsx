@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -241,6 +242,7 @@ const MyNotes = () => {
       }));
     }
   }, [viewOpen]);
+  
   const { user } = useAuth();
 
   // Load files from Supabase on mount
@@ -265,6 +267,9 @@ const MyNotes = () => {
             .storage
             .from('study-files')
             .createSignedUrl(`${user?.id}/${file.storage_path}`, 3600);
+            
+          // Format date to be used as lastModified
+          const fileDate = new Date(file.created_at || Date.now()).toISOString().split('T')[0];
 
           return {
             id: file.id,
@@ -272,7 +277,8 @@ const MyNotes = () => {
             type: file.file_type,
             size: file.size,
             pdfUrl: signedUrl?.signedUrl,
-            subject: file.subject
+            subject: file.subject,
+            lastModified: fileDate // Add the required lastModified property
           };
         }));
 
@@ -324,11 +330,15 @@ const MyNotes = () => {
 
         if (dbError) throw dbError;
 
-        const newFile = {
+        // Get current date for lastModified
+        const currentDate = new Date().toISOString().split('T')[0];
+
+        const newFile: NoteFile = {
           id: fileId,
           name: file.name,
           type: fileType,
           size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
+          lastModified: currentDate, // Add required lastModified property
           pdfUrl: signedUrl?.signedUrl,
           subject: subject
         };
@@ -730,3 +740,4 @@ const MyNotes = () => {
 };
 
 export default MyNotes;
+
