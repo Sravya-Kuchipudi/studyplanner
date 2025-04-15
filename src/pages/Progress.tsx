@@ -131,6 +131,15 @@ const ProgressTracker = () => {
   }, []);
 
   useEffect(() => {
+    const timeSpentData = JSON.parse(localStorage.getItem('studyTimeSpent') || '{}');
+    const updatedSubjects = subjects.map(subject => ({
+      ...subject,
+      timeSpent: timeSpentData[subject.name] || 0
+    }));
+    setSubjects(updatedSubjects);
+  }, []);
+
+  useEffect(() => {
     if (subjects.length > 0) {
       localStorage.setItem('studySubjects', JSON.stringify(subjects));
     }

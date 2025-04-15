@@ -45,6 +45,7 @@ interface NoteFile {
   pdfUrl?: string;
   subject?: string;
   text?: string;
+  timeSpent?: number;
 }
 
 interface Timer {
@@ -216,6 +217,12 @@ const MyNotes = () => {
       localStorage.setItem('studyTimeSpent', JSON.stringify(timeSpent));
       
       toast.success(`Study session saved: ${formatTime(timer.seconds)} on ${timer.subjectName}`);
+      
+      setFiles(prevFiles => prevFiles.map(file => 
+        file.subject === timer.subjectName 
+          ? { ...file, timeSpent: (file.timeSpent || 0) + timer.seconds }
+          : file
+      ));
     }
   }, [timer.isRunning, timer.seconds, timer.subjectName]);
   
