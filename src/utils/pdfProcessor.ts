@@ -1,3 +1,4 @@
+
 import * as pdfjs from 'pdfjs-dist';
 import { TextItem } from 'pdfjs-dist/types/src/display/api';
 
@@ -143,4 +144,14 @@ const parseDate = (dateStr: string): Date | null => {
     console.error("Error parsing date:", error);
     return null;
   }
+};
+
+/**
+ * Utility function to sanitize file names for storage
+ */
+export const sanitizeFileName = (fileName: string): string => {
+  // Remove square brackets, parentheses, and other special characters
+  return fileName
+    .replace(/[\[\]\(\)\{\}<>]/g, '_')
+    .replace(/[^a-zA-Z0-9_\-\.]/g, '_');
 };

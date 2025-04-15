@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,8 +30,8 @@ import * as pdfjs from 'pdfjs-dist';
 import { TextItem } from 'pdfjs-dist/types/src/display/api';
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeFileName } from "@/utils/pdfProcessor";
 
-// Set the PDF.js worker source with the exact version
 const pdfWorkerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerSrc;
 
@@ -42,10 +41,10 @@ interface NoteFile {
   type: string;
   size: string;
   lastModified: string;
-  content?: string; // For text content
-  pdfUrl?: string; // For PDF content
-  subject?: string; // Associated subject
-  text?: string; // Extracted text content
+  content?: string;
+  pdfUrl?: string;
+  subject?: string;
+  text?: string;
 }
 
 interface Timer {
@@ -84,7 +83,6 @@ const SAMPLE_FILES: NoteFile[] = [
   }
 ];
 
-// Helper function to extract subject from filename
 const getSubjectFromFilename = (filename: string): string => {
   const knownSubjects = [
     "Mathematics", "Math", 
@@ -100,11 +98,9 @@ const getSubjectFromFilename = (filename: string): string => {
     }
   }
   
-  // Default to "Other" if no subject found
   return "Other";
 };
 
-// Helper function to format time
 const formatTime = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -113,7 +109,6 @@ const formatTime = (seconds: number): string => {
   return `${hours > 0 ? `${hours}h ` : ''}${minutes}m ${secs}s`;
 };
 
-// Helper function to extract text from PDF files
 const extractTextFromPdf = async (url: string): Promise<string> => {
   try {
     console.log("Extracting text from PDF with worker URL:", pdfWorkerSrc);
@@ -122,7 +117,6 @@ const extractTextFromPdf = async (url: string): Promise<string> => {
     
     let fullText = '';
     
-    // Extract text from first 5 pages (or fewer if the document has fewer pages)
     const maxPages = Math.min(pdf.numPages, 5);
     
     for (let i = 1; i <= maxPages; i++) {
@@ -142,7 +136,6 @@ const extractTextFromPdf = async (url: string): Promise<string> => {
   }
 };
 
-// Helper function to read text files
 const readTextFile = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -169,7 +162,6 @@ const MyNotes = () => {
   const [isLoadingPdf, setIsLoadingPdf] = useState<boolean>(false);
   const [isUploadingFile, setIsUploadingFile] = useState<boolean>(false);
   
-  // Timer state
   const [timer, setTimer] = useState<Timer>({
     seconds: 0,
     isRunning: false,
@@ -178,7 +170,6 @@ const MyNotes = () => {
   
   const timerRef = useRef<number | null>(null);
   
-  // Load files from localStorage on mount
   useEffect(() => {
     const savedFiles = localStorage.getItem('studyNotes');
     if (savedFiles) {
@@ -194,12 +185,10 @@ const MyNotes = () => {
     }
   }, []);
   
-  // Save files to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem('studyNotes', JSON.stringify(files));
   }, [files]);
   
-  // Timer logic
   useEffect(() => {
     if (timer.isRunning) {
       timerRef.current = window.setInterval(() => {
@@ -220,20 +209,16 @@ const MyNotes = () => {
     };
   }, [timer.isRunning]);
   
-  // Save timer data when it stops
   useEffect(() => {
     if (!timer.isRunning && timer.seconds > 0 && timer.subjectName) {
-      // Save time spent to localStorage
       const timeSpent = JSON.parse(localStorage.getItem('studyTimeSpent') || '{}');
       timeSpent[timer.subjectName] = (timeSpent[timer.subjectName] || 0) + timer.seconds;
       localStorage.setItem('studyTimeSpent', JSON.stringify(timeSpent));
       
-      // Show toast notification
       toast.success(`Study session saved: ${formatTime(timer.seconds)} on ${timer.subjectName}`);
     }
   }, [timer.isRunning, timer.seconds, timer.subjectName]);
   
-  // Stop timer when dialog closes
   useEffect(() => {
     if (!viewOpen && timer.isRunning) {
       setTimer(prev => ({
@@ -245,7 +230,6 @@ const MyNotes = () => {
   
   const { user } = useAuth();
 
-  // Load files from Supabase on mount
   useEffect(() => {
     if (user) {
       loadUserFiles();
@@ -268,7 +252,6 @@ const MyNotes = () => {
             .from('study-files')
             .createSignedUrl(`${user?.id}/${file.storage_path}`, 3600);
             
-          // Format date to be used as lastModified
           const fileDate = new Date(file.created_at || Date.now()).toISOString().split('T')[0];
 
           return {
@@ -278,7 +261,7 @@ const MyNotes = () => {
             size: file.size,
             pdfUrl: signedUrl?.signedUrl,
             subject: file.subject,
-            lastModified: fileDate // Add the required lastModified property
+            lastModified: fileDate
           };
         }));
 
@@ -301,21 +284,20 @@ const MyNotes = () => {
         const fileId = crypto.randomUUID();
         const fileType = file.name.split('.').pop()?.toLowerCase() || "unknown";
         const subject = getSubjectFromFilename(file.name);
-        const storagePath = `${file.name}-${fileId}`;
         
-        // Upload file to Supabase Storage
+        const sanitizedFileName = sanitizeFileName(file.name);
+        const storagePath = `${sanitizedFileName}-${fileId}`;
+        
         const { error: uploadError } = await supabase.storage
           .from('study-files')
           .upload(`${user.id}/${storagePath}`, file);
 
         if (uploadError) throw uploadError;
 
-        // Create signed URL for the uploaded file
         const { data: signedUrl } = await supabase.storage
           .from('study-files')
           .createSignedUrl(`${user.id}/${storagePath}`, 3600);
 
-        // Save file metadata to database
         const { error: dbError } = await supabase
           .from('study_files')
           .insert({
@@ -330,7 +312,6 @@ const MyNotes = () => {
 
         if (dbError) throw dbError;
 
-        // Get current date for lastModified
         const currentDate = new Date().toISOString().split('T')[0];
 
         const newFile: NoteFile = {
@@ -338,7 +319,7 @@ const MyNotes = () => {
           name: file.name,
           type: fileType,
           size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-          lastModified: currentDate, // Add required lastModified property
+          lastModified: currentDate,
           pdfUrl: signedUrl?.signedUrl,
           subject: subject
         };
@@ -365,14 +346,12 @@ const MyNotes = () => {
       const fileToDelete = files.find(file => file.id === id);
       if (!fileToDelete) return;
 
-      // Delete from Supabase Storage
       const { error: storageError } = await supabase.storage
         .from('study-files')
         .remove([`${user.id}/${fileToDelete.name}-${fileToDelete.id}`]);
 
       if (storageError) throw storageError;
 
-      // Delete from database
       const { error: dbError } = await supabase
         .from('study_files')
         .delete()
@@ -380,7 +359,6 @@ const MyNotes = () => {
 
       if (dbError) throw dbError;
 
-      // Update local state
       setFiles(files.filter(file => file.id !== id));
       toast.success("File deleted successfully");
     } catch (error) {
@@ -393,14 +371,12 @@ const MyNotes = () => {
     setSelectedFile(file);
     setViewOpen(true);
     
-    // Start the timer
     setTimer({
       seconds: 0,
       isRunning: true,
       subjectName: file.subject || null
     });
     
-    // If it's a PDF and has a URL, load it
     if (file.type === 'pdf' && file.pdfUrl) {
       try {
         setIsLoadingPdf(true);
@@ -412,7 +388,6 @@ const MyNotes = () => {
         setPdfTotalPages(pdf.numPages);
         setPdfPageNum(1);
         
-        // We'll now render the PDF directly instead of just extracting text
         setPdfPageText("PDF loaded successfully");
       } catch (error) {
         console.error("Error loading PDF:", error);
@@ -740,4 +715,3 @@ const MyNotes = () => {
 };
 
 export default MyNotes;
-
