@@ -210,21 +210,25 @@ const MyNotes = () => {
     };
   }, [timer.isRunning]);
   
-  useEffect(() => {
-    if (!timer.isRunning && timer.seconds > 0 && timer.subjectName) {
-      const timeSpent = JSON.parse(localStorage.getItem('studyTimeSpent') || '{}');
-      timeSpent[timer.subjectName] = (timeSpent[timer.subjectName] || 0) + timer.seconds;
-      localStorage.setItem('studyTimeSpent', JSON.stringify(timeSpent));
-      
-      toast.success(`Study session saved: ${formatTime(timer.seconds)} on ${timer.subjectName}`);
-      
-      setFiles(prevFiles => prevFiles.map(file => 
-        file.subject === timer.subjectName 
-          ? { ...file, timeSpent: (file.timeSpent || 0) + timer.seconds }
-          : file
-      ));
-    }
-  }, [timer.isRunning, timer.seconds, timer.subjectName]);
+useEffect(() => {
+  if (!timer.isRunning && timer.seconds > 0 && selectedFile?.name) {
+    // Retrieve the existing time spent from localStorage
+    const existingTime = parseInt(localStorage.getItem(selectedFile.name) || "0", 10);
+
+    // Update localStorage with the new time
+    const newTime = existingTime + timer.seconds;
+    localStorage.setItem(selectedFile.name, newTime.toString());
+
+    toast.success(`Time saved: ${formatTime(timer.seconds)} for ${selectedFile.name}`);
+    
+    // Update the selected file's timeSpent in state
+    setFiles((prevFiles) =>
+      prevFiles.map((file) =>
+        file.name === selectedFile.name ? { ...file, timeSpent: newTime } : file
+      )
+    );
+  }
+}, [timer.isRunning, timer.seconds, selectedFile]);
   
   useEffect(() => {
     if (!viewOpen && timer.isRunning) {
