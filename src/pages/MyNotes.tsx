@@ -170,7 +170,22 @@ const MyNotes = () => {
   });
   
   const timerRef = useRef<number | null>(null);
-  
+ 
+useEffect(() => {
+  const handleStorageChange = (event: StorageEvent) => {
+    if (event.key === "studyNotesTimer" && event.newValue) {
+      const timerData = JSON.parse(event.newValue);
+      setTimer(timerData);
+    }
+  };
+
+  window.addEventListener("storage", handleStorageChange);
+
+  return () => {
+    window.removeEventListener("storage", handleStorageChange);
+  };
+}, []);
+ 
 useEffect(() => {
   if (typeof window !== "undefined" && localStorage) {
     const savedFiles = localStorage.getItem("studyNotes");
@@ -325,7 +340,7 @@ const loadUserFiles = async () => {
   
 
 const handleFileAccess = async (file) => {
-  if (file.pdfUrlHasExpired) { // Replace with actual logic to check expiration
+  if (file.pdfUrlHasExpired) {
     const refreshedUrl = await refreshSignedUrl(file);
     if (refreshedUrl) {
       setFiles((prevFiles) =>
@@ -339,71 +354,79 @@ const handleFileAccess = async (file) => {
   }
 };
   
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files;
-    if (!fileList || !user) return;
-    
-    setIsUploadingFile(true);
-    
-    try {
-      for (const file of Array.from(fileList)) {
-        const fileId = crypto.randomUUID();
-        const fileType = file.name.split('.').pop()?.toLowerCase() || "unknown";
-        const subject = getSubjectFromFilename(file.name);
-        
-        const sanitizedFileName = sanitizeFileName(file.name);
-        const storagePath = `${sanitizedFileName}-${fileId}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('study-files')
-          .upload(`${user.id}/${storagePath}`, file);
+  const MAX_FILE_SIZE_MB = 10; 
 
-        if (uploadError) throw uploadError;
+const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const fileList = e.target.files;
+  if (!fileList || !user) return;
 
-        const { data: signedUrl } = await supabase.storage
-          .from('study-files')
-          .createSignedUrl(`${user.id}/${storagePath}`, 3600);
+  setIsUploadingFile(true);
 
-        const { error: dbError } = await supabase
-          .from('study_files')
-          .insert({
-            id: fileId,
-            user_id: user.id,
-            name: file.name,
-            file_type: fileType,
-            size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-            storage_path: storagePath,
-            subject: subject
-          });
+  try {
+    for (const file of Array.from(fileList)) {
+      const fileSizeMB = file.size / (1024 * 1024);
+      if (fileSizeMB > MAX_FILE_SIZE_MB) {
+        toast.error(`File size exceeds ${MAX_FILE_SIZE_MB} MB: ${file.name}`);
+        continue; 
+      }
 
-        if (dbError) throw dbError;
+      const fileId = crypto.randomUUID();
+      const fileType = file.name.split('.').pop()?.toLowerCase() || "unknown";
+      const subject = getSubjectFromFilename(file.name);
 
-        const currentDate = new Date().toISOString().split('T')[0];
+      const sanitizedFileName = sanitizeFileName(file.name);
+      const storagePath = `${sanitizedFileName}-${fileId}`;
 
-        const newFile: NoteFile = {
+      const { error: uploadError } = await supabase.storage
+        .from('study-files')
+        .upload(`${user.id}/${storagePath}`, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: signedUrl } = await supabase.storage
+        .from('study-files')
+        .createSignedUrl(`${user.id}/${storagePath}`, 3600);
+
+      const { error: dbError } = await supabase
+        .from('study_files')
+        .insert({
           id: fileId,
+          user_id: user.id,
           name: file.name,
-          type: fileType,
-          size: `${(file.size / (1024 * 1024)).toFixed(2)} MB`,
-          lastModified: currentDate,
-          pdfUrl: signedUrl?.signedUrl,
+          file_type: fileType,
+          size: `${fileSizeMB.toFixed(2)} MB`,
+          storage_path: storagePath,
           subject: subject
-        };
+        });
 
-        setFiles(prev => [...prev, newFile]);
-      }
-      
-      toast.success(`Uploaded file(s) successfully`);
-    } catch (error) {
-      console.error("Error processing files:", error);
-      toast.error("Error uploading file(s). Please try again.");
-    } finally {
-      setIsUploadingFile(false);
-      if (e.target) {
-        e.target.value = "";
-      }
+      if (dbError) throw dbError;
+
+      const currentDate = new Date().toISOString().split('T')[0];
+
+      const newFile: NoteFile = {
+        id: fileId,
+        name: file.name,
+        type: fileType,
+        size: `${fileSizeMB.toFixed(2)} MB`,
+        lastModified: currentDate,
+        pdfUrl: signedUrl?.signedUrl,
+        subject: subject
+      };
+
+      setFiles(prev => [...prev, newFile]);
     }
-  };
+
+    toast.success(`Uploaded file(s) successfully`);
+  } catch (error) {
+    console.error("Error processing files:", error);
+    toast.error("Error uploading file(s). Please try again.");
+  } finally {
+    setIsUploadingFile(false);
+    if (e.target) {
+      e.target.value = "";
+    }
+  }
+};
 
   const handleDeleteFile = async (id: string) => {
     if (!user) return;
