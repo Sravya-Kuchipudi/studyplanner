@@ -190,25 +190,25 @@ const MyNotes = () => {
     localStorage.setItem('studyNotes', JSON.stringify(files));
   }, [files]);
   
-  useEffect(() => {
-    if (timer.isRunning) {
-      timerRef.current = window.setInterval(() => {
-        setTimer(prev => ({
-          ...prev,
-          seconds: prev.seconds + 1
-        }));
-      }, 1000);
-    } else if (timerRef.current !== null) {
+useEffect(() => {
+  if (timer.isRunning) {
+    timerRef.current = window.setInterval(() => {
+      setTimer((prev) => ({
+        ...prev,
+        seconds: prev.seconds + 1,
+      }));
+    }, 1000);
+  } else if (timerRef.current !== null) {
+    clearInterval(timerRef.current);
+    timerRef.current = null;
+  }
+
+  return () => {
+    if (timerRef.current !== null) {
       clearInterval(timerRef.current);
-      timerRef.current = null;
     }
-    
-    return () => {
-      if (timerRef.current !== null) {
-        clearInterval(timerRef.current);
-      }
-    };
-  }, [timer.isRunning]);
+  };
+}, [timer.isRunning, setTimer]);
   
 useEffect(() => {
   if (!timer.isRunning && timer.seconds > 0 && selectedFile?.name) {
