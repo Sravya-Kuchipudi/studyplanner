@@ -111,19 +111,30 @@ const ProgressTracker = () => {
   const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
 
 useEffect(() => {
-  const savedSubjects = localStorage.getItem('studySubjects');
-  
-  if (savedSubjects) {
-    const parsedSubjects = JSON.parse(savedSubjects);
-    const updatedSubjects = parsedSubjects.map((subject: Subject) => {
-      const timeSpent = parseInt(localStorage.getItem(subject.name) || "0", 10);
-      return { ...subject, timeSpent };
-    });
-    setSubjects(updatedSubjects);
-  } else {
+  try {
+    const savedSubjects = localStorage.getItem("studySubjects");
+
+    if (savedSubjects) {
+      const parsedSubjects = JSON.parse(savedSubjects);
+      if (Array.isArray(parsedSubjects)) {
+        const updatedSubjects = parsedSubjects.map((subject: Subject) => {
+          const timeSpent = parseInt(localStorage.getItem(subject.name) || "0", 10);
+          return { ...subject, timeSpent };
+        });
+
+        setSubjects(updatedSubjects);
+      } else {
+        setSubjects(initialSubjects);
+      }
+    } else {
+      setSubjects(initialSubjects);
+    }
+  } catch (error) {
+    console.error("Error loading studySubjects:", error);
     setSubjects(initialSubjects);
   }
 }, []);
+
 
   useEffect(() => {
     if (subjects.length > 0) {
