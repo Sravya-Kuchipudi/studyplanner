@@ -171,8 +171,9 @@ const MyNotes = () => {
   
   const timerRef = useRef<number | null>(null);
   
-  useEffect(() => {
-    const savedFiles = localStorage.getItem('studyNotes');
+useEffect(() => {
+  if (typeof window !== "undefined" && localStorage) {
+    const savedFiles = localStorage.getItem("studyNotes");
     if (savedFiles) {
       try {
         const parsedFiles = JSON.parse(savedFiles);
@@ -184,7 +185,8 @@ const MyNotes = () => {
     } else {
       setFiles(SAMPLE_FILES);
     }
-  }, []);
+  }
+}, []);
   
   useEffect(() => {
     localStorage.setItem('studyNotes', JSON.stringify(files));
@@ -252,23 +254,35 @@ useEffect(() => {
     }
   }, [user]);
 
-  const loadUserFiles = async () => {
-    try {
-      const { data: files, error } = await supabase
-        .from('study_files')
-        .select('*')
-        .order('created_at', { ascending: false });
+const loadUserFiles = async () => {
+  try {
+    const { data: files, error } = await supabase
+      .from("study_files")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-      if (error) throw error;
+    if (error) {
+      console.error("Error fetching files:", error.message);
+      toast.error("Failed to load your files. Please try again later.");
+      return;
+    }
 
-      if (files) {
-        const loadedFiles = await Promise.all(files.map(async (file) => {
-          const { data: signedUrl } = await supabase
+    if (files) {
+      const loadedFiles = await Promise.all(
+        files.map(async (file) => {
+          const { data: signedUrl, error: urlError } = await supabase
             .storage
-            .from('study-files')
+            .from("study-files")
             .createSignedUrl(`${user?.id}/${file.storage_path}`, 3600);
-            
-          const fileDate = new Date(file.created_at || Date.now()).toISOString().split('T')[0];
+
+          if (urlError) {
+            console.error("Error creating signed URL:", urlError.message);
+            throw new Error("Failed to generate file URL.");
+          }
+
+          const fileDate = new Date(file.created_at || Date.now())
+            .toISOString()
+            .split("T")[0];
 
           return {
             id: file.id,
@@ -277,17 +291,18 @@ useEffect(() => {
             size: file.size,
             pdfUrl: signedUrl?.signedUrl,
             subject: file.subject,
-            lastModified: fileDate
+            lastModified: fileDate,
           };
-        }));
+        })
+      );
 
-        setFiles(loadedFiles);
-      }
-    } catch (error) {
-      console.error("Error loading files:", error);
-      toast.error("Failed to load your files");
+      setFiles(loadedFiles);
     }
-  };
+  } catch (error) {
+    console.error("Unexpected error loading files:", error.message);
+    toast.error("An unexpected error occurred while loading your files.");
+  }
+};
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
