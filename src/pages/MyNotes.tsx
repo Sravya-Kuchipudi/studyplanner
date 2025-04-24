@@ -304,6 +304,41 @@ const loadUserFiles = async () => {
   }
 };
 
+  const refreshSignedUrl = async (file) => {
+  try {
+    const { data: signedUrl, error } = await supabase
+      .storage
+      .from("study-files")
+      .createSignedUrl(`${user?.id}/${file.storage_path}`, 3600);
+
+    if (error) {
+      console.error("Error refreshing signed URL:", error.message);
+      return null;
+    }
+
+    return signedUrl?.signedUrl;
+  } catch (error) {
+    console.error("Unexpected error refreshing signed URL:", error.message);
+    return null;
+  }
+};
+  
+
+const handleFileAccess = async (file) => {
+  if (file.pdfUrlHasExpired) { // Replace with actual logic to check expiration
+    const refreshedUrl = await refreshSignedUrl(file);
+    if (refreshedUrl) {
+      setFiles((prevFiles) =>
+        prevFiles.map((f) =>
+          f.id === file.id ? { ...f, pdfUrl: refreshedUrl } : f
+        )
+      );
+    } else {
+      toast.error("Failed to refresh file URL.");
+    }
+  }
+};
+  
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     if (!fileList || !user) return;
@@ -399,6 +434,7 @@ const loadUserFiles = async () => {
   };
 
   const handleViewFile = async (file: NoteFile) => {
+    await handleFileAccess(file);
     setSelectedFile(file);
     setViewOpen(true);
     
