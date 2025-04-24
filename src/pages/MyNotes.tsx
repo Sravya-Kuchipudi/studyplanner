@@ -211,7 +211,12 @@ useEffect(() => {
 }, [timer.isRunning, setTimer]);
   
 useEffect(() => {
-  if (!timer.isRunning && timer.seconds > 0 && selectedFile?.name) {
+  if (!timer.isRunning && timer.seconds > 0) {
+    if (!selectedFile?.name) {
+      console.warn("No file is selected, skipping timer save.");
+      return;
+    }
+
     // Retrieve the existing time spent from localStorage
     const existingTime = parseInt(localStorage.getItem(selectedFile.name) || "0", 10);
 
