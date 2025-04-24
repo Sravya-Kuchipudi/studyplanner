@@ -110,15 +110,20 @@ const ProgressTracker = () => {
   });
   const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
 
-  useEffect(() => {
-    const savedSubjects = localStorage.getItem('studySubjects');
-    
-    if (savedSubjects) {
-      setSubjects(JSON.parse(savedSubjects));
-    } else {
-      setSubjects(initialSubjects);
-    }
-  }, []);
+useEffect(() => {
+  const savedSubjects = localStorage.getItem('studySubjects');
+  
+  if (savedSubjects) {
+    const parsedSubjects = JSON.parse(savedSubjects);
+    const updatedSubjects = parsedSubjects.map((subject: Subject) => {
+      const timeSpent = parseInt(localStorage.getItem(subject.name) || "0", 10);
+      return { ...subject, timeSpent };
+    });
+    setSubjects(updatedSubjects);
+  } else {
+    setSubjects(initialSubjects);
+  }
+}, []);
 
   useEffect(() => {
     if (subjects.length > 0) {
